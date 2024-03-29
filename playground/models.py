@@ -1,17 +1,67 @@
-#models.py real-file
 from django.db import models
+from django.contrib.auth.models import AbstractUser
+from django.utils.translation import gettext_lazy as _
 
-class Barber(models.Model):
-    name = models.CharField(max_length=100)
+class Customer(AbstractUser):
+    # Fields specific to customers
     phone_number = models.CharField(max_length=20, blank=True, null=True)
-    email = models.EmailField(blank=True, null=True)
+    notification_preferences = models.CharField(max_length=100, blank=True, null=True)
+    address = models.CharField(max_length=255, blank=True, null=True)
+
+    # Add related_name for groups
+    groups = models.ManyToManyField(
+        'auth.Group',
+        verbose_name=_('groups'),
+        blank=True,
+        related_name='customer_groups',
+        related_query_name='customer',
+    )
+
+    # Add related_name for user_permissions
+    user_permissions = models.ManyToManyField(
+        'auth.Permission',
+        verbose_name=_('user permissions'),
+        blank=True,
+        related_name='customer_user_permissions',
+        related_query_name='customer',
+    )
+
+    def __str__(self):
+        return self.username
+
+class Barber(AbstractUser):
+    # Fields specific to barbers
     bio = models.TextField(blank=True, null=True)
     profile_picture = models.ImageField(upload_to='barber_profiles/', blank=True, null=True)
     experience_years = models.PositiveIntegerField(blank=True, null=True)
     is_available = models.BooleanField(default=True)
+    service_menu = models.TextField(blank=True, null=True)
+    booking_preferences = models.TextField(blank=True, null=True)
+    location = models.CharField(max_length=100, default='Default Location')  # Location field with default value
+    specialization = models.CharField(max_length=100, default='General')  # Specialization field with default value
+
+    # Add related_name for groups
+    groups = models.ManyToManyField(
+        'auth.Group',
+        verbose_name='groups',
+        blank=True,
+        related_name='barber_groups',
+        related_query_name='barber',
+    )
+
+    # Add related_name for user_permissions
+    user_permissions = models.ManyToManyField(
+        'auth.Permission',
+        verbose_name='user permissions',
+        blank=True,
+        related_name='barber_user_permissions',
+        related_query_name='barber',
+    )
 
     def __str__(self):
-        return self.name
+        return self.username
+
+
 
 class Haircut(models.Model):
     name = models.CharField(max_length=100)
@@ -24,6 +74,7 @@ class Appointment(models.Model):
     haircut = models.ForeignKey(Haircut, on_delete=models.CASCADE)
     user = models.ForeignKey('auth.User', on_delete=models.CASCADE)
     date_time = models.DateTimeField()
+
     def __str__(self):
         return f"Appointment for {self.haircut} with {self.barber} on {self.date_time}"
 
