@@ -1,14 +1,20 @@
 <!-- templates/home.html -->
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Welcome to My Project</title>
+    <title>Welcome to My Project!</title>
 </head>
 <body>
     <h1>Welcome to My Project!</h1>
-    <!-- Add any other content you want to display on the home page -->
-</body>
-</html>
+<form method="post" action="{% url 'role_selection_view' %}">
+    {% csrf_token %}
+    <label for="role">Select your role:</label>
+    <select name="role" id="role">
+        <option value="barber">Barber</option>
+        <option value="customer">Customer</option>
+    </select>
+    <button type="submit">Continue</button>
+</form>
+

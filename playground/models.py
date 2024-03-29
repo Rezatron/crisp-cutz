@@ -1,8 +1,23 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
 from django.utils.translation import gettext_lazy as _
+import random
+import string
 
-class Customer(AbstractUser):
+
+
+class CustomUser(AbstractUser):
+    # Existing code
+
+    def save(self, *args, **kwargs):
+        if not self.pk and not self.password:
+            self.set_password(''.join(random.choices(string.ascii_letters + string.digits, k=12)))  # Generate a random password
+        super().save(*args, **kwargs)
+
+    class Meta:
+        abstract = True  # Make sure this model is not created in the database
+
+class Customer(CustomUser):
     # Fields specific to customers
     phone_number = models.CharField(max_length=20, blank=True, null=True)
     notification_preferences = models.CharField(max_length=100, blank=True, null=True)
@@ -29,8 +44,9 @@ class Customer(AbstractUser):
     def __str__(self):
         return self.username
 
-class Barber(AbstractUser):
+class Barber(CustomUser):
     # Fields specific to barbers
+    name = models.CharField(max_length=150)
     bio = models.TextField(blank=True, null=True)
     profile_picture = models.ImageField(upload_to='barber_profiles/', blank=True, null=True)
     experience_years = models.PositiveIntegerField(blank=True, null=True)
