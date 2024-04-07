@@ -7,7 +7,7 @@ class BarberRegistrationForm(UserCreationForm):
 
     class Meta:
         model = Barber
-        fields = ['username', 'email', 'password1',  'bio', 'profile_picture', 'experience_years', 'is_available', 'service_menu', 'booking_preferences', 'location', 'specialization']
+        fields = ['username','name', 'email', 'password1',  'bio', 'profile_picture', 'experience_years', 'is_available', 'service_menu', 'booking_preferences', 'location', 'specialization']
 
 
 class CustomerRegistrationForm(UserCreationForm):

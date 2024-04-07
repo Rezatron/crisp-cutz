@@ -7,5 +7,6 @@ urlpatterns = [
     path('register/barber/', views.barber_register, name='barber_register'),  # Barber registration URL
     path('register/customer/', views.customer_register, name='customer_register'),  # Customer registration URL
     path('role-selection/', views.role_selection_view, name='role_selection_view'),  # Update the URL pattern
+    path('dashboard/', views.dashboard, name='dashboard'),
     # Add other URLs here
 ]
