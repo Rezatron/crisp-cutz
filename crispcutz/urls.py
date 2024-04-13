@@ -17,7 +17,7 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path, include
 from django.contrib.auth.views import LoginView
-from playground.views import home_page, role_selection_view
+from playground.views import home_page, role_selection_view, dashboard
 
 urlpatterns = [
     path('', home_page, name='home'),  # Add a URL pattern for the home page
@@ -25,4 +25,5 @@ urlpatterns = [
     path('register/', role_selection_view, name='register'),
     path('playground/', include('playground.urls')), 
     path('login/', LoginView.as_view(), name='login'), # Include playground app URLs
+    path('dashboard/', dashboard, name='dashboard'),
 ]

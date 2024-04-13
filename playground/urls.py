@@ -8,5 +8,8 @@ urlpatterns = [
     path('register/customer/', views.customer_register, name='customer_register'),  # Customer registration URL
     path('role-selection/', views.role_selection_view, name='role_selection_view'),  # Update the URL pattern
     path('dashboard/', views.dashboard, name='dashboard'),
+    path('explore/', views.explore, name='explore'),
+    path('appointments/', views.appointments, name='appointments'),
+    path('profile/', views.profile, name='profile'),
     # Add other URLs here
 ]

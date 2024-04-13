@@ -3,6 +3,10 @@ from django.http import HttpResponse
 from .forms import BarberRegistrationForm, CustomerRegistrationForm
 from django.contrib.auth import views as auth_views, authenticate, login, logout
 from django.contrib import messages
+from django.shortcuts import render
+from django.views.decorators.csrf import csrf_protect
+
+
 
 def home_page(request):
     return render(request, 'home.html')
@@ -36,15 +40,18 @@ def customer_register(request):
         form = CustomerRegistrationForm()
     return render(request, 'customer_registration.html', {'form': form})
 
+@csrf_protect
 def login_view(request):
     if request.method == 'POST':
-        # Hardcoded username and password for debugging purposes
-        hardcoded_username = "test_user"
-        hardcoded_password = "test_password"
+        username = request.POST.get('username')
+        password = request.POST.get('password')
 
-        # Compare received username and password with hardcoded values
-        if request.POST.get('username') == hardcoded_username and request.POST.get('password') == hardcoded_password:
-            # Authentication successful, proceed with login
+        # Authenticate user
+        user = authenticate(request, username=username, password=password)
+
+        if user is not None:
+            # Login the user
+            login(request, user)
             return redirect('dashboard')
         else:
             # Authentication failed
@@ -52,6 +59,16 @@ def login_view(request):
     else:
         return render(request, 'login.html')
 
-
 def dashboard(request):
        return render(request, 'dashboard.html')
+def dashboard(request):
+    return render(request, 'dashboard.html')
+
+def explore(request):
+    return render(request, 'explore.html')
+
+def appointments(request):
+    return render(request, 'appointments.html')
+
+def profile(request):
+    return render(request, 'profile.html')
