@@ -16,3 +16,8 @@ class CustomerRegistrationForm(UserCreationForm):
     class Meta:
         model = Customer
         fields = ['username', 'email', 'password1', 'phone_number', 'notification_preferences', 'address']
+
+
+class BarberLoginForm(forms.Form):
+    username = forms.CharField()
+    password = forms.CharField(widget=forms.PasswordInput)

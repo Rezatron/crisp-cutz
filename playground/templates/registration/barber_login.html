@@ -1,0 +1,15 @@
+<!-- barber_login.html -->
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Barber Login</title>
+</head>
+<body>
+    <h1>Barber Login</h1>
+    <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit">Login</button>
+    </form>
+</body>
+</html>
