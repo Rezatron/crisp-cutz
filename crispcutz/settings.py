@@ -25,7 +25,7 @@ SECRET_KEY = 'django-insecure-nb&zqn8zsi+_#5$)boskt*l%38tod^j8@_%pi^nt4i&4nd&)eg
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['localhost', '127.0.0.1']
 
 
 # Application definition
@@ -38,6 +38,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'playground',
+    'django_google_maps',
 ]
 
 MIDDLEWARE = [

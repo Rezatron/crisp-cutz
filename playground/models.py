@@ -3,11 +3,12 @@ from django.contrib.auth.models import AbstractUser
 from django.utils.translation import gettext_lazy as _
 import random
 import string
-
-
+from django_google_maps import fields as map_fields
+from location_field.models.plain import PlainLocationField  # Import the PlainLocationField
 
 class CustomUser(AbstractUser):
-    # Existing code
+    first_name = models.CharField(_('first name'), max_length=30, blank=True)
+    last_name = models.CharField(_('last name'), max_length=30, blank=True)
 
     def save(self, *args, **kwargs):
         if not self.pk and not self.password:
@@ -46,15 +47,15 @@ class Customer(CustomUser):
 
 class Barber(CustomUser):
     # Fields specific to barbers
-    name = models.CharField(max_length=150)
     bio = models.TextField(blank=True, null=True)
     profile_picture = models.ImageField(upload_to='barber_profiles/', blank=True, null=True)
     experience_years = models.PositiveIntegerField(blank=True, null=True)
     is_available = models.BooleanField(default=True)
     service_menu = models.TextField(blank=True, null=True)
     booking_preferences = models.TextField(blank=True, null=True)
-    location = models.CharField(max_length=100, default='Default Location')  # Location field with default value
+    location = PlainLocationField(based_fields=['city'], zoom=7, default='Default Location')
     specialization = models.CharField(max_length=100, default='General')  # Specialization field with default value
+    
 
     # Add related_name for groups
     groups = models.ManyToManyField(
@@ -73,6 +74,8 @@ class Barber(CustomUser):
         related_name='barber_user_permissions',
         related_query_name='barber',
     )
+    class Meta:
+        ordering = ['id', 'username', 'email', 'first_name', 'last_name', 'bio', 'experience_years', 'is_available', 'service_menu', 'booking_preferences', 'location', 'specialization']
 
     def __str__(self):
         return self.username
