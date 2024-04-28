@@ -56,7 +56,10 @@ ROOT_URLCONF = 'crispcutz.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [BASE_DIR / 'playground/templates'],  # Add the correct directory path here
+        'DIRS': [
+            BASE_DIR / 'playground/templates/registration',
+            BASE_DIR / 'playground/templates',
+        ],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
