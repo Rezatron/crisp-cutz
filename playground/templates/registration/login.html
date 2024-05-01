@@ -1,4 +1,3 @@
-<!-- playground/templates/login.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -8,10 +7,19 @@
 </head>
 <body>
     <h1>Login</h1>
-    <form method="post">
+
+    <h2>Barber Login</h2>
+    <form method="post" action="{% url 'barber_login' %}">
         {% csrf_token %}
-        {{ form.as_p }}
-        <button type="submit">Login</button>
+        {{ barber_form.as_p }}
+        <button type="submit">Login as Barber</button>
+    </form>
+
+    <h2>Customer Login</h2>
+    <form method="post" action="{% url 'customer_login' %}">
+        {% csrf_token %}
+        {{ customer_form.as_p }}
+        <button type="submit">Login as Customer</button>
     </form>
 </body>
 </html>
