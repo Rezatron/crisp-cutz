@@ -1,6 +1,7 @@
 from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from .models import Barber, Customer
+from django.contrib.auth.models import User
 
 class BarberRegistrationForm(UserCreationForm):
     email = forms.EmailField(required=True)
@@ -31,5 +32,10 @@ class CustomerRegistrationForm(UserCreationForm):
 
 
 class BarberLoginForm(forms.Form):
+    username = forms.CharField()
+    password = forms.CharField(widget=forms.PasswordInput)
+
+
+class CustomerLoginForm(forms.Form):
     username = forms.CharField()
     password = forms.CharField(widget=forms.PasswordInput)

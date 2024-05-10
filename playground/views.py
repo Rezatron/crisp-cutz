@@ -1,10 +1,13 @@
-# views.py
-
 from django.shortcuts import render, redirect
-from django.contrib.auth import authenticate, login
-from .forms import BarberRegistrationForm, CustomerRegistrationForm, BarberLoginForm
+from django.contrib.auth import authenticate, login, logout, get_user_model
 from django.contrib import messages
-from .models import Barber, Appointment
+from django.contrib.auth.forms import AuthenticationForm
+from .forms import BarberRegistrationForm, CustomerRegistrationForm, BarberLoginForm, CustomerLoginForm
+from .models import Appointment, CustomUser, Barber, Customer
+from django.contrib.auth.decorators import login_required
+import sys
+
+print(sys.path)
 
 def home_page(request):
     return render(request, 'home.html')
@@ -29,7 +32,7 @@ def barber_register(request):
             messages.error(request, 'Registration failed. Please correct the errors below.')
     else:
         form = BarberRegistrationForm()
-    
+
     return render(request, 'registration/barber_registration.html', {'form': form})
 
 def customer_register(request):
@@ -43,57 +46,47 @@ def customer_register(request):
             messages.error(request, 'Registration failed. Please correct the errors below.')
     else:
         form = CustomerRegistrationForm()
-    
+
     return render(request, 'customer_registration.html', {'form': form})
 
-def login_view(request):
+def customer_login_view(request):
+    error_message = None
     if request.method == 'POST':
-        username = request.POST.get('username')
-        password = request.POST.get('password')
-        user = authenticate(request, username=username, password=password)
-        if user is not None:
-            login(request, user)
-            return redirect('dashboard')
-        else:
-            return render(request, 'login.html', {'error_message': 'Invalid username or password'})
+        form = CustomerLoginForm(request.POST)
+        if form.is_valid():
+            username = form.cleaned_data['username']
+            password = form.cleaned_data['password']
+            user = authenticate(username=username, password=password)
+            if user is not None:
+                login(request, user)
+                return redirect('dashboard')
+            else:
+                error_message = 'Invalid username or password'
     else:
-        return render(request, 'login.html')
+        form = CustomerLoginForm()
+    return render(request, 'registration/customer_login.html', {'form': form, 'error_message': error_message})
 
 def barber_login_view(request):
+    error_message = None
     if request.method == 'POST':
         form = BarberLoginForm(request.POST)
         if form.is_valid():
             username = form.cleaned_data['username']
             password = form.cleaned_data['password']
-            # Authenticate the user
-            user = authenticate(request, username=username, password=password)
-            if user is not None:
-                # Log the user in
+            user = authenticate(username=username, password=password)
+            if user is not None and hasattr(user, 'barber') and user.barber is not None:
                 login(request, user)
                 return redirect('barber_dashboard')
             else:
-                # If authentication fails, add an error to the form
-                form.add_error(None, 'Invalid username or password')
+                error_message = 'Invalid username or password for barber'
     else:
         form = BarberLoginForm()
-    return render(request, 'barber_login.html', {'form': form})
-
-def customer_login_view(request):
-    if request.method == 'POST':
-        username = request.POST.get('username')
-        password = request.POST.get('password')
-        user = authenticate(request, username=username, password=password)
-        if user is not None:
-            login(request, user)
-            return redirect('dashboard')  # Redirect to the dashboard after successful login
-        else:
-            return render(request, 'customer_login.html', {'error_message': 'Invalid username or password'})
-    else:
-        return render(request, 'customer_login.html')
+    return render(request, 'registration/barber_login.html', {'form': form, 'error_message': error_message})
 
 
-def address_selection_view(request):
-    return render(request, 'address_selection.html')
+def logout_customer(request):
+    logout(request)
+    return redirect('customer_login')
 
 def dashboard(request):
     return render(request, 'dashboard.html')
@@ -107,7 +100,8 @@ def appointments(request):
 def profile(request):
     return render(request, 'profile.html')
 
+
 def barber_dashboard(request):
-    barber = request.user
+    barber = request.user.barber
     appointments = Appointment.objects.filter(barber=barber)
-    return render(request, 'barber_dashboard.html', {'barber': barber, 'appointments': appointments})
+    return render(request, 'barber_dashboard.html', {'appointments': appointments})

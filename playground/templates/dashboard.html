@@ -20,6 +20,10 @@
 <!-- Content for Dashboard tab goes here -->
 <h3>Dashboard Content</h3>
 
+<span>Hello, {{request.user}}</span>
+<span><a href="{% url 'logout_customer' %}">Logout</a></span>
+
+
 <script src="{% static 'scripts.js' %}"></script> <!-- Link to your JavaScript file -->
 </body>
 </html>

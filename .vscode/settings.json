@@ -1,3 +1,7 @@
 {
-    "python.pythonPath": "/Users/Adam/.local/share/virtualenvs/barber-app-juL1RU0S/bin/python"
+    "python.pythonPath": "/Users/Adam/.local/share/virtualenvs/barber-app-juL1RU0S/bin/python",
+    "CodeGPT.apiKey": "CodeGPT Plus Beta"
 }
+//  source /Users/Adam/.local/share/virtualenvs/barber-app-juL1RU0S/bin/activate
+
+//      python manage.py runserver

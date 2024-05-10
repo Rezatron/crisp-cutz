@@ -1,1 +1,24 @@
-<h1>  GUTEN TAG M'FUCKA  </h1>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Barber Dashboard</title>
+    <link rel="stylesheet" href="{% static 'styles.css' %}"> <!-- Link to your CSS file -->
+</head>
+<body>
+
+<div class="tab">
+    <a href="{% url 'barber_dashboard' %}" class="tablinks">Dashboard</a>
+    <a href="{% url 'explore' %}" class="tablinks">Explore</a>
+    <a href="{% url 'appointments' %}" class="tablinks">My Appointments</a>
+    <a href="{% url 'profile' %}" class="tablinks">Profile</a>
+</div>
+
+<!-- Content for Dashboard tab goes here -->
+<h3>Barber Dashboard Content</h3>
+<p>Welcome to the barber dashboard!</p>
+
+<script src="{% static 'scripts.js' %}"></script> <!-- Link to your JavaScript file -->
+</body>
+</html>

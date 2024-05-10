@@ -46,6 +46,7 @@ class Customer(CustomUser):
         return self.username
 
 class Barber(CustomUser):
+    
     # Fields specific to barbers
     bio = models.TextField(blank=True, null=True)
     profile_picture = models.ImageField(upload_to='barber_profiles/', blank=True, null=True)

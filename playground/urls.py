@@ -1,4 +1,4 @@
-from django.urls import path
+from django.urls import path, include
 from . import views
 
 urlpatterns = [
@@ -12,6 +12,10 @@ urlpatterns = [
     path('barber/login/', views.barber_login_view, name='barber_login'),  # Specific
     path('customer/login/', views.customer_login_view, name='customer_login'),  # Specific
 
+    #Logout URLs
+    path('customer/logout/', views.logout_customer, name='logout_customer'),  # Specific
+
+
     # After customer has logged in
     path('dashboard/', views.dashboard, name='dashboard'),  # General
     path('explore/', views.explore, name='explore'),  # General
@@ -20,6 +24,8 @@ urlpatterns = [
 
     #After barber has logged in
     path('barber/dashboard/', views.barber_dashboard, name='barber_dashboard'),
+
+    path('accounts/', include('django.contrib.auth.urls')),
     # Catch-all or dynamic URL pattern (should be placed at the end)
     # path('<str:slug>/', views.dynamic_page, name='dynamic_page'),  # Catch-all
 ]

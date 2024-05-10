@@ -39,6 +39,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'playground',
     'django_google_maps',
+    
 ]
 
 MIDDLEWARE = [
@@ -101,12 +102,12 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-# Custom user model
-AUTH_USER_MODEL = 'playground.CustomUser'
+
+
 
 # Authentication backends
 AUTHENTICATION_BACKENDS = [
-    'django.contrib.auth.backends.ModelBackend',  # Default authentication backend
+    'django.contrib.auth.backends.ModelBackend',
 ]
 
 # Internationalization
@@ -138,3 +139,5 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 LOGIN_URL = 'login'
 LOGIN_REDIRECT_URL = '/dashboard/'
+
+LOCATION_FIELD = 'location'
