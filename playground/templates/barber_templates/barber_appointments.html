@@ -1,0 +1,26 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Barber Appointments</title>
+    <link rel="stylesheet" href="{% static 'styles.css' %}">
+</head>
+<body>
+<div class="tab">
+    <a href="{% url 'barber_dashboard' %}" class="tablinks">Dashboard</a>
+    <a href="{% url 'barber_appointments' %}" class="tablinks">My Appointments</a>
+
+    <a href="{% url 'barber_reports' %}" class="tablinks">Reports</a>
+    <a href="{% url 'barber_profile' %}" class="tablinks">Profile</a>
+    <a href="{% url 'barber_settings' %}" class="tablinks">Settings</a>
+</div>
+<h3>Barber Appointments Content</h3>
+<p>Welcome to the barber appointments page!</p>
+
+<span>Hello, {{request.user}}</span>
+<span><a href="{% url 'logout_customer' %}">Logout</a></span>
+
+</body>
+</html>

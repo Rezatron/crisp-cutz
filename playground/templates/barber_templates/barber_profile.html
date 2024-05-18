@@ -1,14 +1,13 @@
-{% load static %}  <!-- Add this line at the top -->
+{% load static %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Barber Dashboard</title>
-    <link rel="stylesheet" href="{% static 'styles.css' %}"> <!-- Link to your CSS file -->
+    <title>Barber Profile</title>
+    <link rel="stylesheet" href="{% static 'styles.css' %}">
 </head>
 <body>
-
 <div class="tab">
     <a href="{% url 'barber_dashboard' %}" class="tablinks">Dashboard</a>
     <a href="{% url 'barber_appointments' %}" class="tablinks">My Appointments</a>
@@ -17,10 +16,8 @@
     <a href="{% url 'barber_profile' %}" class="tablinks">Profile</a>
     <a href="{% url 'barber_settings' %}" class="tablinks">Settings</a>
 </div>
-
-<!-- Content for Dashboard tab goes here -->
-<h3>Barber Dashboard Content</h3>
-<p>Welcome to the barber dashboard!</p>
+<h3>Barber Profile Content</h3>
+<p>Welcome to the barber profile page!</p>
 
 <span>Hello, {{request.user}}</span>
 <span><a href="{% url 'logout_customer' %}">Logout</a></span>

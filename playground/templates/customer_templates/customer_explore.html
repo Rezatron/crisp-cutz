@@ -11,14 +11,17 @@
 <body>
 
 <div class="tab">
-    <a href="{% url 'dashboard' %}" class="tablinks">Dashboard</a>
-    <a href="{% url 'explore' %}" class="tablinks">Explore</a>
-    <a href="{% url 'appointments' %}" class="tablinks">My Appointments</a>
-    <a href="{% url 'profile' %}" class="tablinks">Profile</a>
+    <a href="{% url 'customer_dashboard' %}" class="tablinks">Dashboard</a>
+    <a href="{% url 'customer_explore' %}" class="tablinks">Explore</a>
+    <a href="{% url 'customer_appointments' %}" class="tablinks">My Appointments</a>
+    <a href="{% url 'customer_profile' %}" class="tablinks">Profile</a>
 </div>
 
 <!-- Content for Explore tab goes here -->
 <h3>Explore Content</h3>
+
+<span>Hello, {{request.user}}</span>
+<span><a href="{% url 'logout_customer' %}">Logout</a></span>
 
 <script src="{% static 'scripts.js' %}"></script> <!-- Link to your JavaScript file -->
 </body>

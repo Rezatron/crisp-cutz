@@ -85,22 +85,45 @@ def logout_user(request):
 
 @login_required
 def dashboard(request):
-    return render(request, 'dashboard.html')
+    return render(request, 'customer_templates/customer_dashboard.html')
 
 @login_required
 def explore(request):
-    return render(request, 'explore.html')
+    return render(request, 'customer_templates/customer_explore.html')
 
 @login_required
 def appointments(request):
-    return render(request, 'appointments.html')
+    return render(request, 'customer_templates/customer_appointments.html')
 
 @login_required
 def profile(request):
-    return render(request, 'profile.html')
+    return render(request, 'customer_templates/customer_profile.html')
 
 @login_required
 def barber_dashboard(request):
     barber = request.user.barber
     appointments = Appointment.objects.filter(barber=barber)
     return render(request, 'barber_templates/barber_dashboard.html', {'appointments': appointments})
+
+@login_required
+def barber_appointments(request):
+    barber = request.user.barber
+    appointments = Appointment.objects.filter(barber=barber)
+    return render(request, 'barber_templates/barber_appointments.html', {'appointments': appointments})
+
+
+
+@login_required
+def barber_reports(request):
+    # You would need to define what data you want to pass for reports
+    return render(request, 'barber_templates/barber_reports.html')
+
+@login_required
+def barber_profile(request):
+    barber = request.user.barber
+    return render(request, 'barber_templates/barber_profile.html', {'barber': barber})
+
+@login_required
+def barber_settings(request):
+    # You would need to define what data you want to pass for settings
+    return render(request, 'barber_templates/barber_settings.html')
