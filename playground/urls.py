@@ -13,8 +13,8 @@ urlpatterns = [
     path('customer/login/', views.customer_login_view, name='customer_login'),  # Specific
 
     #Logout URLs
-    path('customer/logout/', views.logout_customer, name='logout_customer'),  # Specific
-
+    path('customer/logout/', views.logout_user, name='logout_customer'),  # Specific
+    path('barber/logout/', views.logout_user, name='logout_barber'),  # Specific
 
     # After customer has logged in
     path('dashboard/', views.dashboard, name='dashboard'),  # General

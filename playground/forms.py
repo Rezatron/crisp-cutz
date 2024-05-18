@@ -1,7 +1,8 @@
 from django import forms
-from django.contrib.auth.forms import UserCreationForm
+from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
 from .models import Barber, Customer
 from django.contrib.auth.models import User
+from django.contrib.auth import authenticate, get_user_model
 
 class BarberRegistrationForm(UserCreationForm):
     email = forms.EmailField(required=True)
@@ -31,11 +32,32 @@ class CustomerRegistrationForm(UserCreationForm):
 
 
 
-class BarberLoginForm(forms.Form):
-    username = forms.CharField()
-    password = forms.CharField(widget=forms.PasswordInput)
-
+User = get_user_model()
 
 class CustomerLoginForm(forms.Form):
     username = forms.CharField()
     password = forms.CharField(widget=forms.PasswordInput)
+
+    def clean(self):
+        username = self.cleaned_data.get('username')
+        password = self.cleaned_data.get('password')
+        user = authenticate(username=username, password=password)
+
+        if not user or not user.check_password(password):
+            raise forms.ValidationError("Incorrect username or password")
+
+        return super(CustomerLoginForm, self).clean()
+
+class BarberLoginForm(forms.Form):
+    username = forms.CharField()
+    password = forms.CharField(widget=forms.PasswordInput)
+
+    def clean(self):
+        username = self.cleaned_data.get('username')
+        password = self.cleaned_data.get('password')
+        user = authenticate(username=username, password=password)
+
+        if not user or not user.check_password(password):
+            raise forms.ValidationError("Incorrect username or password")
+
+        return super(BarberLoginForm, self).clean()

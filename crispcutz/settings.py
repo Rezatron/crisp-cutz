@@ -39,13 +39,14 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'playground',
     'django_google_maps',
+
     
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
-    'django.middleware.common.CommonMiddleware',
+    'django.middleware.common.CommonMiddleware',   
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
@@ -141,3 +142,4 @@ LOGIN_URL = 'login'
 LOGIN_REDIRECT_URL = '/dashboard/'
 
 LOCATION_FIELD = 'location'
+AUTH_USER_MODEL = 'playground.CustomUser'

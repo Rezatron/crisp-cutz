@@ -1,25 +1,18 @@
+<!-- login.html -->
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login</title>
 </head>
 <body>
     <h1>Login</h1>
-
-    <h2>Barber Login</h2>
-    <form method="post" action="{% url 'barber_login' %}">
+    <form method="post">
         {% csrf_token %}
-        {{ barber_form.as_p }}
-        <button type="submit">Login as Barber</button>
+        {{ form.as_p }}
+        <button type="submit">Login</button>
     </form>
-
-    <h2>Customer Login</h2>
-    <form method="post" action="{% url 'customer_login' %}">
-        {% csrf_token %}
-        {{ customer_form.as_p }}
-        <button type="submit">Login as Customer</button>
-    </form>
+    {% if error_message %}
+        <p>{{ error_message }}</p>
+    {% endif %}
 </body>
 </html>

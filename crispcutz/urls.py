@@ -23,7 +23,7 @@ urlpatterns = [
     path('', home_page, name='home'),  # Add a URL pattern for the home page
     path('admin/', admin.site.urls),
     path('register/', role_selection_view, name='register'),
-    path('playground/', include('playground.urls')), 
-    path('login/', LoginView.as_view(), name='login'), # Include playground app URLs
+    path('', include('playground.urls')),  # Changed this line
+    path('login/', LoginView.as_view(), name='login'), 
     path('dashboard/', dashboard, name='dashboard'),
 ]

@@ -1,10 +1,13 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
 from django.utils.translation import gettext_lazy as _
+from django.contrib.auth.hashers import make_password
 import random
 import string
 from django_google_maps import fields as map_fields
-from location_field.models.plain import PlainLocationField  # Import the PlainLocationField
+from django.contrib.auth.models import User
+from django.conf import settings
+from django.db import models
 
 class CustomUser(AbstractUser):
     first_name = models.CharField(_('first name'), max_length=30, blank=True)
@@ -12,41 +15,31 @@ class CustomUser(AbstractUser):
 
     def save(self, *args, **kwargs):
         if not self.pk and not self.password:
-            self.set_password(''.join(random.choices(string.ascii_letters + string.digits, k=12)))  # Generate a random password
+            self.password = make_password(''.join(random.choices(string.ascii_letters + string.digits, k=12)))  # Generate a random password
         super().save(*args, **kwargs)
-
-    class Meta:
-        abstract = True  # Make sure this model is not created in the database
 
 class Customer(CustomUser):
     # Fields specific to customers
+
     phone_number = models.CharField(max_length=20, blank=True, null=True)
     notification_preferences = models.CharField(max_length=100, blank=True, null=True)
     address = models.CharField(max_length=255, blank=True, null=True)
 
-    # Add related_name for groups
-    groups = models.ManyToManyField(
+    # Override the groups field
+    customer_groups = models.ManyToManyField(
         'auth.Group',
         verbose_name=_('groups'),
         blank=True,
-        related_name='customer_groups',
-        related_query_name='customer',
-    )
-
-    # Add related_name for user_permissions
-    user_permissions = models.ManyToManyField(
-        'auth.Permission',
-        verbose_name=_('user permissions'),
-        blank=True,
-        related_name='customer_user_permissions',
-        related_query_name='customer',
+        help_text=_('The groups this user belongs to. A user will get all permissions granted to each of their groups.'),
+        related_name="customer_groups",
+        related_query_name="customer",
     )
 
     def __str__(self):
         return self.username
 
 class Barber(CustomUser):
-    
+
     # Fields specific to barbers
     bio = models.TextField(blank=True, null=True)
     profile_picture = models.ImageField(upload_to='barber_profiles/', blank=True, null=True)
@@ -54,34 +47,19 @@ class Barber(CustomUser):
     is_available = models.BooleanField(default=True)
     service_menu = models.TextField(blank=True, null=True)
     booking_preferences = models.TextField(blank=True, null=True)
-    location = PlainLocationField(based_fields=['city'], zoom=7, default='Default Location')
+    location = models.CharField(max_length=255, blank=True, null=True)
     specialization = models.CharField(max_length=100, default='General')  # Specialization field with default value
-    
 
-    # Add related_name for groups
-    groups = models.ManyToManyField(
-        'auth.Group',
-        verbose_name='groups',
-        blank=True,
-        related_name='barber_groups',
-        related_query_name='barber',
-    )
-
-    # Add related_name for user_permissions
-    user_permissions = models.ManyToManyField(
-        'auth.Permission',
-        verbose_name='user permissions',
-        blank=True,
-        related_name='barber_user_permissions',
-        related_query_name='barber',
-    )
     class Meta:
-        ordering = ['id', 'username', 'email', 'first_name', 'last_name', 'bio', 'experience_years', 'is_available', 'service_menu', 'booking_preferences', 'location', 'specialization']
+        ordering = ['id', 'username', 'email', 'first_name', 'last_name', 'bio', 'experience_years', 'is_available', 'service_menu', 'booking_preferences', 'location', 'specialization',]
+        permissions = [
+            # existing permissions here
+            ("view_appointment", "Can view appointments"),
+            ("delete_appointment", "Can delete appointments"),
+        ]
 
     def __str__(self):
         return self.username
-
-
 
 class Haircut(models.Model):
     name = models.CharField(max_length=100)
@@ -90,17 +68,18 @@ class Haircut(models.Model):
     # Add more fields as needed
 
 class Appointment(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='user_appointments')
+    barber = models.ForeignKey(Barber, on_delete=models.CASCADE, related_name='barber_appointments')
     barber = models.ForeignKey(Barber, on_delete=models.CASCADE)
     haircut = models.ForeignKey(Haircut, on_delete=models.CASCADE)
-    user = models.ForeignKey('auth.User', on_delete=models.CASCADE)
     date_time = models.DateTimeField()
 
     def __str__(self):
         return f"Appointment for {self.haircut} with {self.barber} on {self.date_time}"
 
 class Review(models.Model):
-    barber = models.ForeignKey(Barber, on_delete=models.CASCADE)
-    user = models.ForeignKey('auth.User', on_delete=models.CASCADE)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='user_reviews')
+    barber = models.ForeignKey(Barber, on_delete=models.CASCADE, related_name='barber_reviews')
     stars = models.IntegerField()
     haircut_type = models.CharField(max_length=100)
     review_text = models.TextField(blank=True, null=True)
