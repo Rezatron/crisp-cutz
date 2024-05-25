@@ -5,7 +5,7 @@ from django.contrib.auth.forms import AuthenticationForm
 from .forms import BarberRegistrationForm, CustomerRegistrationForm, BarberLoginForm, CustomerLoginForm
 from .models import Appointment, CustomUser, Barber, Customer
 from django.contrib.auth.decorators import login_required
-
+from django.http import HttpResponseRedirect
 
 import sys
 
@@ -25,15 +25,18 @@ def role_selection_view(request):
 
 def barber_register(request):
     if request.method == 'POST':
-        form = BarberRegistrationForm(request.POST)
+        form = BarberRegistrationForm(request.POST, request.FILES)
         if form.is_valid():
-            barber = form.save()  # Save the model immediately, no need for commit=False
-            messages.success(request, 'Registration successful. You can now login.')
-            return redirect('login')
+            form.save()
+            # redirect to the login page:
+            return HttpResponseRedirect('/barber/login/')
+        else:
+            # Print form errors
+            print(form.errors)
     else:
         form = BarberRegistrationForm()
 
-    return render(request, 'registration/barber_registration.html', {'form': form})
+    return render(request, 'barber_registration.html', {'form': form})
 
 def customer_register(request):
     if request.method == 'POST':
@@ -41,7 +44,7 @@ def customer_register(request):
         if form.is_valid():
             form.save()
             messages.success(request, 'Registration successful. You can now login.')
-            return redirect('login')
+            return redirect('/customer/login')
     else:
         form = CustomerRegistrationForm()
 

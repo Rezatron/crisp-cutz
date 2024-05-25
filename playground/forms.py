@@ -1,8 +1,12 @@
+import requests
+import json
 from django import forms
 from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
 from .models import Barber, Customer
 from django.contrib.auth.models import User
 from django.contrib.auth import authenticate, get_user_model
+
+from django.core.exceptions import ValidationError
 
 class BarberRegistrationForm(UserCreationForm):
     email = forms.EmailField(required=True)
@@ -20,6 +24,23 @@ class BarberRegistrationForm(UserCreationForm):
     class Meta:
         model = Barber
         fields = ['username', 'first_name', 'last_name', 'email', 'password1', 'password2', 'bio', 'profile_picture', 'experience_years', 'is_available', 'service_menu', 'booking_preferences', 'location', 'specialization']
+
+    def clean_location(self):
+        location = self.cleaned_data.get('location')
+        if location:
+            response = requests.get('https://maps.googleapis.com/maps/api/geocode/json?address={}&key=AIzaSyD3Bk4vpGUe1hsJf6qbzfUHUtmrB6nIL5E'.format(location))
+            print("Response status code:", response.status_code)
+            response_json = response.json()
+            print("Response JSON:", response_json)
+            if response.status_code != 200 or response_json['status'] != 'OK':
+                if 'error_message' in response_json:
+                    print("Error message:", response_json['error_message'])
+                raise ValidationError("Invalid location")
+            # Extract the formatted address from the geocode result
+            formatted_address = response_json['results'][0]['formatted_address']
+            return formatted_address
+        return location
+    
 
 class CustomerRegistrationForm(UserCreationForm):
     email = forms.EmailField()

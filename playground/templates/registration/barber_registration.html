@@ -10,10 +10,42 @@
 </head>
 <body>
     <h1>Barber Registration</h1>
-    <form method="post">
+    <form method="post" enctype="multipart/form-data">
         {% csrf_token %}
         {{ form.as_p }}
         <button type="submit">Register</button>
     </form>
+    <script>
+        var autocomplete;
+        function initAutocomplete() {
+            autocomplete = new google.maps.places.Autocomplete(
+                (document.getElementById('id_location')),
+                {types: ['geocode']});
+        }
+
+        function loadScript(url, callback){
+            var script = document.createElement("script");
+            script.type = "text/javascript";
+
+            if (script.readyState){  //IE
+                script.onreadystatechange = function(){
+                    if (script.readyState == "loaded" ||
+                            script.readyState == "complete"){
+                        script.onreadystatechange = null;
+                        callback();
+                    }
+                };
+            } else {  //Others
+                script.onload = function(){
+                    callback();
+                };
+            }
+
+            script.src = url;
+            document.getElementsByTagName("head")[0].appendChild(script);
+        }
+
+        loadScript("https://maps.googleapis.com/maps/api/js?key=AIzaSyD3Bk4vpGUe1hsJf6qbzfUHUtmrB6nIL5E&libraries=places&callback=initAutocomplete", function(){});
+    </script>
 </body>
 </html>
