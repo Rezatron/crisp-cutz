@@ -4,10 +4,12 @@ from django.utils.translation import gettext_lazy as _
 from django.contrib.auth.hashers import make_password
 import random
 import string
-from django_google_maps import fields as map_fields
+
 from django.contrib.auth.models import User
 from django.conf import settings
 from django.db import models
+
+
 
 class CustomUser(AbstractUser):
     first_name = models.CharField(_('first name'), max_length=30, blank=True)
@@ -39,8 +41,6 @@ class Customer(CustomUser):
         return self.username
 
 class Barber(CustomUser):
-
-    # Fields specific to barbers
     bio = models.TextField(blank=True, null=True)
     profile_picture = models.ImageField(upload_to='barber_profiles/', blank=True, null=True)
     experience_years = models.PositiveIntegerField(blank=True, null=True)
@@ -48,6 +48,7 @@ class Barber(CustomUser):
     service_menu = models.TextField(blank=True, null=True)
     booking_preferences = models.TextField(blank=True, null=True)
     location = models.CharField(max_length=255, blank=True, null=True)
+    
     specialization = models.CharField(max_length=100, default='General')  # Specialization field with default value
 
     class Meta:

@@ -5,6 +5,8 @@ from django.contrib.auth.forms import AuthenticationForm
 from .forms import BarberRegistrationForm, CustomerRegistrationForm, BarberLoginForm, CustomerLoginForm
 from .models import Appointment, CustomUser, Barber, Customer
 from django.contrib.auth.decorators import login_required
+
+
 import sys
 
 print(sys.path)
@@ -25,7 +27,7 @@ def barber_register(request):
     if request.method == 'POST':
         form = BarberRegistrationForm(request.POST)
         if form.is_valid():
-            form.save()
+            barber = form.save()  # Save the model immediately, no need for commit=False
             messages.success(request, 'Registration successful. You can now login.')
             return redirect('login')
     else:
