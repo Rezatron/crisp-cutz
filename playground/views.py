@@ -6,6 +6,8 @@ from .forms import BarberRegistrationForm, CustomerRegistrationForm, BarberLogin
 from .models import Appointment, CustomUser, Barber, Customer
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponseRedirect
+from django.conf import settings
+import requests
 
 import sys
 
@@ -92,9 +94,33 @@ def logout_user(request):
 def dashboard(request):
     return render(request, 'customer_templates/customer_dashboard.html')
 
+
+def address_to_coordinates(address):
+    params = {
+        'address': address,
+        'key': settings.GOOGLE_MAPS_API_KEY
+    }
+    response = requests.get('https://maps.googleapis.com/maps/api/geocode/json', params=params)
+    if response.status_code == 200:
+        data = response.json()
+        if data['results']:
+            lat = data['results'][0]['geometry']['location']['lat']
+            lng = data['results'][0]['geometry']['location']['lng']
+            return lat, lng
+    return None, None
+
+
+
+
+
 @login_required
 def explore(request):
-    return render(request, 'customer_templates/customer_explore.html')
+    customer = request.user.customer
+    customer.latitude, customer.longitude = address_to_coordinates(customer.address)
+    # barbers = Barber.objects.all()  # comment out this line
+    # for barber in barbers:  # comment out this line
+    #     barber.latitude, barber.longitude = address_to_coordinates(barber.location)  # comment out this line
+    return render(request, 'customer_templates/customer_explore.html', {'customer': customer})  # remove 'barbers' from the context
 
 @login_required
 def appointments(request):

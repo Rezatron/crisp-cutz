@@ -142,3 +142,4 @@ LOGIN_REDIRECT_URL = '/dashboard/'
 
 LOCATION_FIELD = 'location'
 AUTH_USER_MODEL = 'playground.CustomUser'
+GOOGLE_MAPS_API_KEY = 'AIzaSyD3Bk4vpGUe1hsJf6qbzfUHUtmrB6nIL5E'  
