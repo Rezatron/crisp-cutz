@@ -24,32 +24,54 @@
 
 <span>Hello, {{request.user}}</span>
 <span><a href="{% url 'logout_customer' %}">Logout</a></span>
-
 <script>
-    function initMap() {
-        var map = new google.maps.Map(document.getElementById('map'), {
-            zoom: 13,
-            center: {lat: {{ latitude }}, lng: {{ longitude }}}
+// Separate function to add the click event listener
+function addInfoWindow(marker, infoWindow, map) {
+    marker.addListener('click', function() {
+        infoWindow.open(map, marker);
+    });
+}
+
+// Attach the initMap function to the window object
+window.initMap = function() {
+    console.log("initMap called");
+    var map = new google.maps.Map(document.getElementById('map'), {
+        zoom: 13,
+        center: {lat: {{ latitude }}, lng: {{ longitude }}}
+    });
+
+    // Define the image to be used as marker icon
+    var icon = {
+        url: "{% static 'images/pin_icon.png' %}", // path to the image file
+        scaledSize: new google.maps.Size(50, 50), // size of the icon
+        origin: new google.maps.Point(0, 0), // origin of the image
+        anchor: new google.maps.Point(0, 0) // anchor point of the image
+    };
+
+    // Add a marker and an infoWindow for each barber location
+    {% for barber in barbers_details %}
+        console.log("Adding marker for barber:", {lat: {{ barber.latitude }}, lng: {{ barber.longitude }}});
+        var marker = new google.maps.Marker({
+            position: {lat: {{ barber.latitude }}, lng: {{ barber.longitude }}},
+            map: map,
+            icon: icon // use the custom icon
         });
 
-        // Add a marker for each barber location
-        {% for barber in barbers %}
-            {% if barber.latitude and barber.longitude %}
-                new google.maps.Marker({
-                    position: {lat: {{ barber.latitude }}, lng: {{ barber.longitude }}},
-                    map: map
-                });
-            {% endif %}
-        {% endfor %}
-    }
-    // Call the initMap function when the page loads
-    window.onload = initMap;
+        var infoWindow = new google.maps.InfoWindow({
+            content: '<h3>' + "{{ barber.name }}" + '</h3><p>' + "{{ barber.location }}" + '</p>',
+        });
+
+        // Use a separate function to add the click event listener
+        addInfoWindow(marker, infoWindow, map);
+    {% endfor %}
+}
+
 </script>
 
-<script src="{% static 'scripts.js' %}"></script> <!-- Link to your JavaScript file -->
-
 <!-- Include the Google Maps API script -->
-<script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyD3Bk4vpGUe1hsJf6qbzfUHUtmrB6nIL5E&callback=initMap"></script>
+<script async defer
+    src="https://maps.googleapis.com/maps/api/js?key=AIzaSyD3Bk4vpGUe1hsJf6qbzfUHUtmrB6nIL5E&callback=initMap">
+</script>
 
 </body>
 </html>

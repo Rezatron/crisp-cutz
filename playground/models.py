@@ -48,7 +48,8 @@ class Barber(CustomUser):
     service_menu = models.TextField(blank=True, null=True)
     booking_preferences = models.TextField(blank=True, null=True)
     location = models.CharField(max_length=255, blank=True, null=True)
-    
+    latitude = models.FloatField(null=True, blank=True)
+    longitude = models.FloatField(null=True, blank=True)   
     specialization = models.CharField(max_length=100, default='General')  # Specialization field with default value
 
     class Meta:

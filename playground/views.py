@@ -29,7 +29,9 @@ def barber_register(request):
     if request.method == 'POST':
         form = BarberRegistrationForm(request.POST, request.FILES)
         if form.is_valid():
-            form.save()
+            barber = form.save(commit=False)
+            barber.latitude, barber.longitude = address_to_coordinates(barber.location)
+            barber.save()
             # redirect to the login page:
             return HttpResponseRedirect('/barber/login/')
         else:
@@ -119,12 +121,32 @@ def address_to_coordinates(address):
 def explore(request):
     customer = request.user.customer
     customer.latitude, customer.longitude = address_to_coordinates(customer.location)
+    barbers = Barber.objects.all()  # Retrieve all Barber instances
+
+    # Update the location data for each barber and create a list of barbers with their details
+    barbers_details = []
+    for barber in barbers:
+        lat, lng = address_to_coordinates(barber.location)
+        barber.latitude = lat
+        barber.longitude = lng
+        barber.save()
+
+        barbers_details.append({
+            'name': barber.first_name + ' ' + barber.last_name,  # replace with the correct attributes
+            'location': barber.location,
+            'latitude': barber.latitude,
+            'longitude': barber.longitude,
+            # Add any other details you want to display
+        })
+
     context = {
         'customer': customer,
         'latitude': customer.latitude,
         'longitude': customer.longitude,
+        'barbers_details': barbers_details,
     }
     return render(request, 'customer_templates/customer_explore.html', context)
+
 @login_required
 def appointments(request):
     return render(request, 'customer_templates/customer_appointments.html')
