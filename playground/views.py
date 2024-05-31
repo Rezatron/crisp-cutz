@@ -44,7 +44,9 @@ def customer_register(request):
     if request.method == 'POST':
         form = CustomerRegistrationForm(request.POST)
         if form.is_valid():
-            form.save()
+            customer = form.save(commit=False)
+            customer.location = form.cleaned_data.get('location')
+            customer.save()
             messages.success(request, 'Registration successful. You can now login.')
             return redirect('/customer/login')
     else:
@@ -116,12 +118,13 @@ def address_to_coordinates(address):
 @login_required
 def explore(request):
     customer = request.user.customer
-    customer.latitude, customer.longitude = address_to_coordinates(customer.address)
-    # barbers = Barber.objects.all()  # comment out this line
-    # for barber in barbers:  # comment out this line
-    #     barber.latitude, barber.longitude = address_to_coordinates(barber.location)  # comment out this line
-    return render(request, 'customer_templates/customer_explore.html', {'customer': customer})  # remove 'barbers' from the context
-
+    customer.latitude, customer.longitude = address_to_coordinates(customer.location)
+    context = {
+        'customer': customer,
+        'latitude': customer.latitude,
+        'longitude': customer.longitude,
+    }
+    return render(request, 'customer_templates/customer_explore.html', context)
 @login_required
 def appointments(request):
     return render(request, 'customer_templates/customer_appointments.html')
@@ -158,3 +161,10 @@ def barber_profile(request):
 def barber_settings(request):
     # You would need to define what data you want to pass for settings
     return render(request, 'barber_templates/barber_settings.html')
+
+
+
+def list_customers(request):
+    customers_with_usernames = Customer.objects.select_related('user')
+    customer_usernames = [customer.user.username for customer in customers_with_usernames]
+    return render(request, 'your_template.html', {'customer_usernames': customer_usernames})

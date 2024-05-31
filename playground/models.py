@@ -25,7 +25,7 @@ class Customer(CustomUser):
 
     phone_number = models.CharField(max_length=20, blank=True, null=True)
     notification_preferences = models.CharField(max_length=100, blank=True, null=True)
-    address = models.CharField(max_length=255, blank=True, null=True)
+    location = models.CharField(max_length=255, blank=True, null=True)
 
     # Override the groups field
     customer_groups = models.ManyToManyField(
@@ -71,7 +71,6 @@ class Haircut(models.Model):
 class Appointment(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='user_appointments')
     barber = models.ForeignKey(Barber, on_delete=models.CASCADE, related_name='barber_appointments')
-    barber = models.ForeignKey(Barber, on_delete=models.CASCADE)
     haircut = models.ForeignKey(Haircut, on_delete=models.CASCADE)
     date_time = models.DateTimeField()
 

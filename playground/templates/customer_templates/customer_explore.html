@@ -7,7 +7,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Explore</title>
     <link rel="stylesheet" href="{% static 'styles.css' %}"> <!-- Link to your CSS file -->
-    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyD3Bk4vpGUe1hsJf6qbzfUHUtmrB6nIL5E"></script>
 </head>
 <body>
 
@@ -29,8 +28,8 @@
 <script>
     function initMap() {
         var map = new google.maps.Map(document.getElementById('map'), {
-            zoom: 10,
-            center: {lat: -34.397, lng: 150.644}  // Set this to the coordinates of the area you want the map to focus on
+            zoom: 13,
+            center: {lat: {{ latitude }}, lng: {{ longitude }}}
         });
 
         // Add a marker for each barber location
@@ -43,11 +42,14 @@
             {% endif %}
         {% endfor %}
     }
-
     // Call the initMap function when the page loads
     window.onload = initMap;
 </script>
 
 <script src="{% static 'scripts.js' %}"></script> <!-- Link to your JavaScript file -->
+
+<!-- Include the Google Maps API script -->
+<script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyD3Bk4vpGUe1hsJf6qbzfUHUtmrB6nIL5E&callback=initMap"></script>
+
 </body>
 </html>

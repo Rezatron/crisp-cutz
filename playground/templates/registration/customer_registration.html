@@ -1,5 +1,4 @@
 <!-- customer_registration.html -->
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -12,8 +11,39 @@
     <form method="post" enctype="multipart/form-data">
         {% csrf_token %}
         {{ form.as_p }}
-
         <button type="submit">Register</button>
     </form>
+    <script>
+        var autocomplete;
+        function initAutocomplete() {
+            autocomplete = new google.maps.places.Autocomplete(
+                (document.getElementById('id_location')),  // replace 'id_location' with the id of the location field in your customer registration form
+                {types: ['geocode']});
+        }
+
+        function loadScript(url, callback){
+            var script = document.createElement("script");
+            script.type = "text/javascript";
+
+            if (script.readyState){  //IE
+                script.onreadystatechange = function(){
+                    if (script.readyState == "loaded" ||
+                            script.readyState == "complete"){
+                        script.onreadystatechange = null;
+                        callback();
+                    }
+                };
+            } else {  //Others
+                script.onload = function(){
+                    callback();
+                };
+            }
+
+            script.src = url;
+            document.getElementsByTagName("head")[0].appendChild(script);
+        }
+
+        loadScript("https://maps.googleapis.com/maps/api/js?key=AIzaSyD3Bk4vpGUe1hsJf6qbzfUHUtmrB6nIL5E&libraries=places&callback=initAutocomplete", function(){});
+    </script>
 </body>
 </html>

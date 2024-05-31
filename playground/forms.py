@@ -38,22 +38,33 @@ class BarberRegistrationForm(UserCreationForm):
                 raise ValidationError("Invalid location")
             # Extract the formatted address from the geocode result
             formatted_address = response_json['results'][0]['formatted_address']
-            return formatted_address
-        return location
-    
+            # Extract the latitude and longitude from the geocode result
+            lat = response_json['results'][0]['geometry']['location']['lat']
+            lng = response_json['results'][0]['geometry']['location']['lng']
+            return formatted_address, lat, lng
+        return location, None, None
+        
 
 class CustomerRegistrationForm(UserCreationForm):
     email = forms.EmailField()
     first_name = forms.CharField(max_length=30, required=True)
     last_name = forms.CharField(max_length=30, required=True)
-
+    location = forms.CharField(max_length=100, required=True)
     class Meta:
         model = Customer
-        fields = ['username', 'first_name', 'last_name', 'email', 'password1', 'password2', 'phone_number', 'notification_preferences', 'address']
+        fields = ['username', 'first_name', 'last_name', 'email', 'password1', 'password2', 'phone_number', 'location']
 
+    def clean_location(self):
+        location = self.cleaned_data.get('location')
+        if location:
+            response = requests.get('https://maps.googleapis.com/maps/api/geocode/json?address={}&key=AIzaSyD3Bk4vpGUe1hsJf6qbzfUHUtmrB6nIL5E'.format(location))
+            response_json = response.json()
+            if response.status_code != 200 or response_json['status'] != 'OK':
+                raise ValidationError("Invalid location")
+            formatted_address = response_json['results'][0]['formatted_address']
+            return formatted_address
+        return location
 
-
-User = get_user_model()
 
 class CustomerLoginForm(forms.Form):
     username = forms.CharField()
