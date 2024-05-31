@@ -41,8 +41,11 @@ class BarberRegistrationForm(UserCreationForm):
             # Extract the latitude and longitude from the geocode result
             lat = response_json['results'][0]['geometry']['location']['lat']
             lng = response_json['results'][0]['geometry']['location']['lng']
-            return formatted_address, lat, lng
-        return location, None, None
+            # Store the latitude and longitude in the Barber model
+            self.instance.latitude = lat
+            self.instance.longitude = lng
+            return formatted_address
+        return location
         
 
 class CustomerRegistrationForm(UserCreationForm):

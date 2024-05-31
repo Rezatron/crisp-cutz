@@ -115,8 +115,6 @@ def address_to_coordinates(address):
 
 
 
-
-
 @login_required
 def explore(request):
     customer = request.user.customer
@@ -136,6 +134,10 @@ def explore(request):
             'location': barber.location,
             'latitude': barber.latitude,
             'longitude': barber.longitude,
+            'bio': str(barber.bio),
+            'experience_years': str(barber.experience_years),
+            'service_menu': str(barber.service_menu),
+            'profile_picture_url': str(barber.profile_picture.url) if barber.profile_picture else None,
             # Add any other details you want to display
         })
 
@@ -146,7 +148,6 @@ def explore(request):
         'barbers_details': barbers_details,
     }
     return render(request, 'customer_templates/customer_explore.html', context)
-
 @login_required
 def appointments(request):
     return render(request, 'customer_templates/customer_appointments.html')
