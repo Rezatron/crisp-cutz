@@ -23,6 +23,29 @@
 <span>Hello, {{request.user}}</span>
 <span><a href="{% url 'logout_customer' %}">Logout</a></span>
 
+<!-- Account Details section -->
+<div id="account-details">
+    <button id="account-details-button">Edit Account Details</button> <!-- Button to open the modal -->
+</div>
+
+<!-- Payment Information section -->
+<div id="payment-info">
+    <!-- Add a button or link here that directs to the payment information page -->
+</div>
+
+<!-- The Modal -->
+<div id="account-details-modal" class="modal">
+    <!-- Modal content -->
+    <div class="modal-content">
+    <span class="close">&times;</span>
+    <form method="post" action="{% url 'update_customer' %}">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit" id="account-details-submit-button">Update information</button>
+    </form>
+    </div>
+</div>
+
 <script src="{% static 'scripts.js' %}"></script> <!-- Link to your JavaScript file -->
 </body>
 </html>

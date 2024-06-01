@@ -2,7 +2,7 @@ from django.shortcuts import render, redirect
 from django.contrib.auth import authenticate, login, logout, get_user_model
 from django.contrib import messages
 from django.contrib.auth.forms import AuthenticationForm
-from .forms import BarberRegistrationForm, CustomerRegistrationForm, BarberLoginForm, CustomerLoginForm
+from .forms import BarberRegistrationForm, CustomerRegistrationForm, BarberLoginForm, CustomerLoginForm, CustomerUpdateForm
 from .models import Appointment, CustomUser, Barber, Customer
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponseRedirect
@@ -154,7 +154,26 @@ def appointments(request):
 
 @login_required
 def profile(request):
-    return render(request, 'customer_templates/customer_profile.html')
+    form = CustomerUpdateForm(instance=request.user.customer)
+    return render(request, 'customer_templates/customer_profile.html', {'form': form})
+
+@login_required
+def update_customer(request):
+    print(request.POST)  # Print the POST data
+    if request.method == 'POST':
+        form = CustomerUpdateForm(request.POST, instance=request.user.customer)
+        if form.is_valid():
+            customer = form.save(commit=False)
+            customer.location = form.cleaned_data.get('cleaned_location')
+            customer.latitude, customer.longitude = address_to_coordinates(customer.location)
+            customer.save()
+            messages.success(request, f'Your account has been updated!')
+            return redirect('customer_profile')
+        else:
+            print(form.errors)  # Print the form errors
+    else:
+        form = CustomerUpdateForm(instance=request.user.customer)
+    return render(request, 'customer_templates/customer_profile.html', {'form': form})
 
 @login_required
 def barber_dashboard(request):

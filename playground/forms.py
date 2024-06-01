@@ -96,3 +96,32 @@ class BarberLoginForm(forms.Form):
             raise forms.ValidationError("Incorrect username or password")
 
         return super(BarberLoginForm, self).clean()
+    
+
+
+class CustomerUpdateForm(forms.ModelForm):
+    email = forms.EmailField()
+    first_name = forms.CharField(max_length=30, required=True)
+    last_name = forms.CharField(max_length=30, required=True)
+    location = forms.CharField(max_length=100, required=True)
+
+    class Meta:
+        model = Customer
+        fields = ['first_name', 'last_name', 'email', 'phone_number', 'location']
+
+    def clean_location(self):
+        location = self.cleaned_data.get('location')
+        if location:
+            response = requests.get('https://maps.googleapis.com/maps/api/geocode/json?address={}&key=AIzaSyD3Bk4vpGUe1hsJf6qbzfUHUtmrB6nIL5E'.format(location))
+            response_json = response.json()
+            print("API response:", response_json)  # Add this line
+            if response.status_code != 200 or response_json.get('status') != 'OK':
+                raise ValidationError("Invalid location")
+            results = response_json.get('results')
+            if results:
+                formatted_address = results[0].get('formatted_address')
+                if formatted_address:
+                    # Update the instance's location with the formatted address
+                    self.instance.location = formatted_address
+                    return formatted_address
+        return location

@@ -40,6 +40,18 @@ window.initMap = function() {
         center: {lat: {{ latitude }}, lng: {{ longitude }}}
     });
 
+        // remove "places" on map (other business pins)
+    var noPoi = [
+        {
+            featureType: "poi",
+            stylers: [
+              { visibility: "off" }
+            ]   
+        }
+    ];
+    map.setOptions({styles: noPoi});
+
+
     // Define the image to be used as marker icon
     var icon = {
         url: "{% static 'images/pin_icon.png' %}", // path to the image file

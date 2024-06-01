@@ -21,6 +21,7 @@ urlpatterns = [
     path('customer_explore/', views.explore, name='customer_explore'),  # General
     path('customer_appointments/', views.appointments, name='customer_appointments'),  # General
     path('customer_profile/', views.profile, name='customer_profile'),  # General
+    path('customer_profile/update/', views.update_customer, name='update_customer'),  # New URL for updating customer details
 
     #After barber has logged in
     path('barber/dashboard/', views.barber_dashboard, name='barber_dashboard'),

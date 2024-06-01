@@ -20,6 +20,7 @@ from django.contrib.auth.views import LoginView
 from playground.views import home_page, role_selection_view, dashboard
 from django.conf import settings
 from django.conf.urls.static import static
+from django.contrib.staticfiles.urls import staticfiles_urlpatterns
 
 urlpatterns = [
     path('', home_page, name='home'),  # Add a URL pattern for the home page
@@ -31,4 +32,6 @@ urlpatterns = [
 ]
 
 if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+    urlpatterns += staticfiles_urlpatterns()
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
