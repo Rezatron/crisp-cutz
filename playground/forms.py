@@ -111,7 +111,46 @@ class CustomerUpdateForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        if 'location' not in self.data:
+        if 'location' not in self.data and self.instance and self.instance.pk:
+            self.data = self.data.copy()
+            self.data['location'] = self.instance.location
+            
+    def clean_location(self):
+        location = self.cleaned_data.get('location')
+        if location:
+            response = requests.get('https://maps.googleapis.com/maps/api/geocode/json?address={}&key=AIzaSyD3Bk4vpGUe1hsJf6qbzfUHUtmrB6nIL5E'.format(location))
+            print("Response status code:", response.status_code)
+            response_json = response.json()
+            print("Response JSON:", response_json)
+            if response.status_code != 200 or response_json['status'] != 'OK':
+                if 'error_message' in response_json:
+                    print("Error message:", response_json['error_message'])
+                raise ValidationError("Invalid location")
+            # Extract the formatted address from the geocode result
+            formatted_address = response_json['results'][0]['formatted_address']
+            # Extract the latitude and longitude from the geocode result
+            lat = response_json['results'][0]['geometry']['location']['lat']
+            lng = response_json['results'][0]['geometry']['location']['lng']
+            # Store the latitude and longitude in the Customer model
+            self.instance.latitude = lat
+            self.instance.longitude = lng
+            return formatted_address
+        return location
+    
+
+class BarberUpdateForm(forms.ModelForm):
+    email = forms.EmailField()
+    first_name = forms.CharField(max_length=30, required=True)
+    last_name = forms.CharField(max_length=30, required=True)
+    location = forms.CharField(max_length=100, required=True)
+
+    class Meta:
+        model = Barber
+        fields = ['first_name', 'last_name', 'email', 'bio', 'profile_picture', 'experience_years', 'is_available', 'service_menu', 'booking_preferences', 'location', 'specialization']
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if 'location' not in self.data and self.instance and self.instance.pk:
             self.data = self.data.copy()
             self.data['location'] = self.instance.location
 
@@ -120,13 +159,12 @@ class CustomerUpdateForm(forms.ModelForm):
         if location:
             response = requests.get('https://maps.googleapis.com/maps/api/geocode/json?address={}&key=AIzaSyD3Bk4vpGUe1hsJf6qbzfUHUtmrB6nIL5E'.format(location))
             response_json = response.json()
-            print('Response status code:', response.status_code)  # Add this line
-            print('Response JSON:', response_json)  # Add this line
-            if response.status_code != 200 or response_json.get('status') != 'OK':
+            if response.status_code != 200 or response_json['status'] != 'OK':
                 raise ValidationError("Invalid location")
-            results = response_json.get('results')
-            if results:
-                formatted_address = results[0].get('formatted_address')
-                if formatted_address:
-                    return formatted_address
+            formatted_address = response_json['results'][0]['formatted_address']
+            lat = response_json['results'][0]['geometry']['location']['lat']
+            lng = response_json['results'][0]['geometry']['location']['lng']
+            self.instance.latitude = lat
+            self.instance.longitude = lng
+            return formatted_address
         return location

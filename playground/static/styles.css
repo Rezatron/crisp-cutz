@@ -29,6 +29,10 @@
     padding: 20px;
     border: 1px solid #888;
     width: 80%;
+    max-height: 80vh;
+    /* Maximum height */
+    overflow-y: auto;
+    /* Enable vertical scrolling */
 }
 
 /* The Close Button */
@@ -45,3 +49,4 @@
     text-decoration: none;
     cursor: pointer;
 }
+

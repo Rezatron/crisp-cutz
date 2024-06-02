@@ -1,4 +1,5 @@
 {% load static %}
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -8,19 +9,35 @@
     <link rel="stylesheet" href="{% static 'styles.css' %}">
 </head>
 <body>
+
 <div class="tab">
     <a href="{% url 'barber_dashboard' %}" class="tablinks">Dashboard</a>
     <a href="{% url 'barber_appointments' %}" class="tablinks">My Appointments</a>
-
     <a href="{% url 'barber_reports' %}" class="tablinks">Reports</a>
     <a href="{% url 'barber_profile' %}" class="tablinks">Profile</a>
     <a href="{% url 'barber_settings' %}" class="tablinks">Settings</a>
 </div>
+
 <h3>Barber Profile Content</h3>
-<p>Welcome to the barber profile page!</p>
 
 <span>Hello, {{request.user}}</span>
-<span><a href="{% url 'logout_customer' %}">Logout</a></span>
+<span><a href="{% url 'logout_barber' %}">Logout</a></span>
 
+<div id="account-details">
+    <button id="account-details-button">Edit Account Details</button>
+</div>
+
+<div id="account-details-modal" class="modal">
+    <div class="modal-content">
+    <span class="close">&times;</span>
+    <form method="post" action="{% url 'update_barber' %}">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit" id="account-details-submit-button">Update information</button>
+    </form>
+    </div>
+</div>
+
+<script src="{% static 'scripts.js' %}"></script>
 </body>
 </html>

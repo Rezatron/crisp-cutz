@@ -30,6 +30,7 @@ urlpatterns = [
     path('barber/reports/', views.barber_reports, name='barber_reports'),
     path('barber/profile/', views.barber_profile, name='barber_profile'),
     path('barber/settings/', views.barber_settings, name='barber_settings'),
+    path('barber/update/', views.update_barber, name='update_barber'),
 
     path('accounts/', include('django.contrib.auth.urls')),
     # Catch-all or dynamic URL pattern (should be placed at the end)

@@ -2,7 +2,7 @@ from django.shortcuts import render, redirect
 from django.contrib.auth import authenticate, login, logout, get_user_model
 from django.contrib import messages
 from django.contrib.auth.forms import AuthenticationForm
-from .forms import BarberRegistrationForm, CustomerRegistrationForm, BarberLoginForm, CustomerLoginForm, CustomerUpdateForm
+from .forms import BarberRegistrationForm, CustomerRegistrationForm, BarberLoginForm, CustomerLoginForm, BarberUpdateForm, CustomerUpdateForm
 from .models import Appointment, CustomUser, Barber, Customer
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponseRedirect
@@ -197,8 +197,36 @@ def barber_reports(request):
 
 @login_required
 def barber_profile(request):
-    barber = request.user.barber
-    return render(request, 'barber_templates/barber_profile.html', {'barber': barber})
+    if request.method == 'POST':
+        form = BarberUpdateForm(request.POST, request.FILES, instance=request.user.barber)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Your profile was successfully updated!')
+            return redirect('barber_profile')
+        else:
+            messages.error(request, 'Please correct the error below.')
+    else:
+        form = BarberUpdateForm(instance=request.user.barber)
+    return render(request, 'barber_templates/barber_profile.html', {'form': form})
+
+@login_required
+def update_barber(request):
+    if request.method == 'POST':
+        print(request.POST)  # Print the POST data
+        form = BarberUpdateForm(request.POST, instance=request.user.barber)
+        if form.is_valid():
+            barber = form.save(commit=False)
+            barber.location = form.cleaned_data.get('location')
+            barber.latitude, barber.longitude = address_to_coordinates(barber.location)
+            print(barber.latitude, barber.longitude)  # Print the coordinates
+            barber.save()
+            messages.success(request, f'Your account has been updated!')
+            return redirect('barber_profile')
+        else:
+            print(form.errors)  # Print the form errors
+    else:
+        form = BarberUpdateForm(instance=request.user.barber)
+    return render(request, 'barber_templates/barber_profile.html', {'form': form})
 
 @login_required
 def barber_settings(request):
