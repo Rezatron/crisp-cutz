@@ -75,7 +75,7 @@ window.initMap = function() {
                      '<p><strong>Bio:</strong> ' + "{{ barber.bio|escapejs }}" + '</p>' +
                      '<p><strong>Experience:</strong> ' + "{{ barber.experience_years }}" + ' years</p>' +
                      '<p><strong>Service Menu:</strong> ' + "{{ barber.service_menu|escapejs }}" + '</p>' +
-                    ( "{{ barber.profile_picture_url }}" ? '<img src="' + "{{ barber.profile_picture_url }}" + '" alt="Profile Picture" style="width:100px;height:100px;">' : '' )
+                    ( "{{ barber.profile_picture_url }}" !== 'null' ? '<img src="' + "{{ barber.profile_picture_url }}" + '" alt="Profile Picture" style="width:100px;height:100px;">' : '' )
         });
 
         // Use a separate function to add the click event listener

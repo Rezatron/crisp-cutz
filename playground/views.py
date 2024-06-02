@@ -148,6 +148,7 @@ def explore(request):
         'barbers_details': barbers_details,
     }
     return render(request, 'customer_templates/customer_explore.html', context)
+
 @login_required
 def appointments(request):
     return render(request, 'customer_templates/customer_appointments.html')
@@ -164,7 +165,7 @@ def update_customer(request):
         form = CustomerUpdateForm(request.POST, instance=request.user.customer)
         if form.is_valid():
             customer = form.save(commit=False)
-            customer.location = form.cleaned_data.get('cleaned_location')
+            customer.location = form.cleaned_data.get('location')
             customer.latitude, customer.longitude = address_to_coordinates(customer.location)
             customer.save()
             messages.success(request, f'Your account has been updated!')
