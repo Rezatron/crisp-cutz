@@ -292,17 +292,35 @@ def set_availability(request):
             start_datetime = datetime.datetime.fromisoformat(start_time)
             end_datetime = datetime.datetime.fromisoformat(end_time)
 
-            Availability.objects.create(
+            # Check if an availability entry for the same barber and date exists
+            existing_entry = Availability.objects.filter(
                 barber=barber,
-                start_time=start_datetime,
-                end_time=end_datetime,
-                is_available=True
-            )
+                start_time__date=start_datetime.date()
+            ).first()
+
+            if existing_entry:
+                # Update the existing entry
+                existing_entry.start_time = start_datetime
+                existing_entry.end_time = end_datetime
+                existing_entry.save()
+            else:
+                # Create a new entry
+                Availability.objects.create(
+                    barber=barber,
+                    start_time=start_datetime,
+                    end_time=end_datetime,
+                    is_available=True
+                )
+
             return JsonResponse({'status': 'success'})
+
         except KeyError as e:
             return JsonResponse({'status': 'error', 'message': f'Missing key: {e}'}, status=400)
         except Exception as e:
             return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+
+    return JsonResponse({'status': 'error', 'message': 'Invalid request method'}, status=405)
+
 
 def list_customers(request):
     customers_with_usernames = Customer.objects.select_related('user')
