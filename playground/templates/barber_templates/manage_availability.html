@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token }}">
     <title>Manage Availability</title>
     <style>
         body {
@@ -37,7 +38,6 @@
         .day .availability-button:hover {
             background-color: #0056b3;
         }
-        /* Modal styles */
         .modal {
             display: none;
             position: fixed;
@@ -85,15 +85,20 @@
             <input type="hidden" id="selectedDate" name="date">
             <label for="startTime">Start Time:</label>
             <input type="datetime-local" id="startTime" name="start_time" required>
-            <br></br>
+            <br><br>
             <label for="endTime">End Time:</label>
             <input type="datetime-local" id="endTime" name="end_time" required>
             <button type="submit">Save</button>
+            <button type="button" id="deleteButton">Delete</button>
         </form>
     </div>
 </div>
 
 <script>
+    function getCsrfToken() {
+        return document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+    }
+
     const calendarEl = document.getElementById('calendar');
     const modal = document.getElementById('availabilityModal');
     const closeBtn = document.querySelector('.modal .close');
@@ -101,6 +106,7 @@
     const startTimeInput = document.getElementById('startTime');
     const endTimeInput = document.getElementById('endTime');
     const form = document.getElementById('availabilityForm');
+    const deleteButton = document.getElementById('deleteButton');
 
     let currentYear, currentMonth;
 
@@ -129,6 +135,27 @@
             dayEl.innerHTML += `<button class="availability-button" onclick="openAvailabilityModal('${dateStr}')">Set Availability</button>`;
             calendarEl.appendChild(dayEl);
         }
+
+        // Fetch and display existing availability
+        fetchAvailability();
+    }
+
+    function fetchAvailability() {
+        fetch('/get_availability/')
+            .then(response => response.json())
+            .then(data => {
+                data.forEach(entry => {
+                    const startDate = new Date(entry.start);
+                    const dateStr = `${startDate.getFullYear()}-${startDate.getMonth() + 1}-${startDate.getDate()}`;
+                    const dayEl = Array.from(calendarEl.children).find(day => day.dataset.date === dateStr);
+                    if (dayEl) {
+                        dayEl.innerHTML += `<div>Available from ${startDate.toLocaleTimeString()} to ${new Date(entry.end).toLocaleTimeString()}</div>`;
+                    }
+                });
+            })
+            .catch(error => {
+                console.error('Error fetching availability:', error);
+            });
     }
 
     function openAvailabilityModal(date) {
@@ -139,6 +166,29 @@
 
         startTimeInput.value = startDate.toISOString().slice(0, 16);
         endTimeInput.value = endDate.toISOString().slice(0, 16);
+
+        // Fetch existing availability for the selected date
+        fetch(`/get_availability_for_date/?date=${date}`)
+            .then(response => {
+                if (response.ok) {
+                    return response.json();
+                } else {
+                    throw new Error('Network response was not ok.');
+                }
+            })
+            .then(data => {
+                if (data.status === 'success' && data.data.length > 0) {
+                    const entry = data.data[0];
+                    startTimeInput.value = new Date(entry.start_time).toISOString().slice(0, 16);
+                    endTimeInput.value = new Date(entry.end_time).toISOString().slice(0, 16);
+                } else {
+                    startTimeInput.value = startDate.toISOString().slice(0, 16);
+                    endTimeInput.value = endDate.toISOString().slice(0, 16);
+                }
+            })
+            .catch(error => {
+                console.error('Error fetching availability:', error);
+            });
 
         modal.style.display = "block";
 
@@ -160,14 +210,20 @@
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-CSRFToken': '{{ csrf_token }}'
+                    'X-CSRFToken': getCsrfToken()
                 },
                 body: JSON.stringify({
                     date: formData.get('date'),
                     start_time: formData.get('start_time'),
                     end_time: formData.get('end_time')
                 })
-            }).then(response => response.json())
+            }).then(response => {
+                if (response.ok) {
+                    return response.json();
+                } else {
+                    throw new Error('Network response was not ok.');
+                }
+            })
               .then(data => {
                   if (data.status === 'success') {
                       alert('Availability updated');
@@ -179,6 +235,39 @@
               }).catch(error => {
                   console.error('Error:', error);
                   alert('Error updating availability');
+              });
+        }
+
+        deleteButton.onclick = function() {
+            const startTime = startTimeInput.value;
+
+            fetch('/delete_availability/', {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCsrfToken()
+                },
+                body: JSON.stringify({
+                    start_time: startTime
+                })
+            }).then(response => {
+                if (response.ok) {
+                    return response.json();
+                } else {
+                    throw new Error('Network response was not ok.');
+                }
+            })
+              .then(data => {
+                  if (data.status === 'success') {
+                      alert('Availability deleted');
+                      modal.style.display = "none";
+                      createCalendar(currentYear, currentMonth); // Refresh calendar to reflect changes
+                  } else {
+                      alert('Error deleting availability');
+                  }
+              }).catch(error => {
+                  console.error('Error:', error);
+                  alert('Error deleting availability');
               });
         }
     }

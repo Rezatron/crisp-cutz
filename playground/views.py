@@ -235,7 +235,6 @@ def barber_settings(request):
     return render(request, 'barber_templates/barber_settings.html', {
         'barber_update_form': barber_update_form,
     })
-
 @login_required
 def manage_availability(request):
     barber = request.user.barber
@@ -286,42 +285,85 @@ def set_availability(request):
             data = json.loads(request.body)
             start_time = data['start_time']
             end_time = data['end_time']
+            date = data['date']
             barber = request.user.barber
 
             # Convert the date and time strings to datetime objects
             start_datetime = datetime.datetime.fromisoformat(start_time)
             end_datetime = datetime.datetime.fromisoformat(end_time)
 
-            # Check if an availability entry for the same barber and date exists
-            existing_entry = Availability.objects.filter(
+            # Check if availability already exists
+            availability, created = Availability.objects.update_or_create(
                 barber=barber,
-                start_time__date=start_datetime.date()
-            ).first()
-
-            if existing_entry:
-                # Update the existing entry
-                existing_entry.start_time = start_datetime
-                existing_entry.end_time = end_datetime
-                existing_entry.save()
-            else:
-                # Create a new entry
-                Availability.objects.create(
-                    barber=barber,
-                    start_time=start_datetime,
-                    end_time=end_datetime,
-                    is_available=True
-                )
+                start_time__date=start_datetime.date(),
+                defaults={
+                    'start_time': start_datetime,
+                    'end_time': end_datetime,
+                    'is_available': True
+                }
+            )
 
             return JsonResponse({'status': 'success'})
-
         except KeyError as e:
             return JsonResponse({'status': 'error', 'message': f'Missing key: {e}'}, status=400)
+        except ValueError as e:
+            return JsonResponse({'status': 'error', 'message': f'Invalid date format: {e}'}, status=400)
         except Exception as e:
             return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
 
-    return JsonResponse({'status': 'error', 'message': 'Invalid request method'}, status=405)
+@csrf_exempt
+@login_required
+def delete_availability(request):
+    if request.method == 'DELETE':
+        try:
+            data = json.loads(request.body)
+            start_time = data['start_time']
+            barber = request.user.barber
 
+            # Convert the start time string to a datetime object
+            start_datetime = datetime.datetime.fromisoformat(start_time)
 
+            # Delete the availability
+            deleted_count, _ = Availability.objects.filter(
+                barber=barber,
+                start_time=start_datetime
+            ).delete()
+
+            if deleted_count > 0:
+                return JsonResponse({'status': 'success'})
+            else:
+                return JsonResponse({'status': 'error', 'message': 'No availability found to delete'}, status=404)
+        except KeyError as e:
+            return JsonResponse({'status': 'error', 'message': f'Missing key: {e}'}, status=400)
+        except ValueError as e:
+            return JsonResponse({'status': 'error', 'message': f'Invalid date format: {e}'}, status=400)
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+
+@login_required
+def get_availability_for_date(request):
+    if request.method == 'GET':
+        try:
+            date_str = request.GET.get('date')
+            start_date = datetime.datetime.fromisoformat(date_str)
+
+            barber = request.user.barber
+            availabilities = barber.availabilities.filter(
+                start_time__date=start_date.date()
+            )
+
+            availability_list = [{
+                'start_time': availability.start_time.isoformat(),
+                'end_time': availability.end_time.isoformat(),
+            } for availability in availabilities]
+
+            return JsonResponse({'status': 'success', 'data': availability_list})
+        except ValueError as e:
+            return JsonResponse({'status': 'error', 'message': f'Invalid date format: {e}'}, status=400)
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+
+        
 def list_customers(request):
     customers_with_usernames = Customer.objects.select_related('user')
     customer_usernames = [customer.user.username for customer in customers_with_usernames]
