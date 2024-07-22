@@ -11,7 +11,8 @@ from django.conf import settings
 import requests
 from django.views.decorators.csrf import csrf_exempt
 import json
-import datetime  # Import datetime
+from django.utils import timezone
+import datetime  # <-- Make sure to import datetime
 
 def home_page(request):
     return render(request, 'home.html')
@@ -235,6 +236,7 @@ def barber_settings(request):
     return render(request, 'barber_templates/barber_settings.html', {
         'barber_update_form': barber_update_form,
     })
+
 @login_required
 def manage_availability(request):
     barber = request.user.barber
@@ -277,7 +279,6 @@ def get_availability(request):
 
     return JsonResponse(availability_list, safe=False)
 
-@csrf_exempt
 @login_required
 def set_availability(request):
     if request.method == 'POST':
@@ -285,12 +286,11 @@ def set_availability(request):
             data = json.loads(request.body)
             start_time = data['start_time']
             end_time = data['end_time']
-            date = data['date']
             barber = request.user.barber
 
-            # Convert the date and time strings to datetime objects
-            start_datetime = datetime.datetime.fromisoformat(start_time)
-            end_datetime = datetime.datetime.fromisoformat(end_time)
+            # Convert the date and time strings to timezone-aware datetime objects
+            start_datetime = timezone.make_aware(datetime.datetime.fromisoformat(start_time))
+            end_datetime = timezone.make_aware(datetime.datetime.fromisoformat(end_time))
 
             # Check if availability already exists
             availability, created = Availability.objects.update_or_create(
@@ -311,7 +311,6 @@ def set_availability(request):
         except Exception as e:
             return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
 
-@csrf_exempt
 @login_required
 def delete_availability(request):
     if request.method == 'DELETE':
@@ -320,8 +319,8 @@ def delete_availability(request):
             start_time = data['start_time']
             barber = request.user.barber
 
-            # Convert the start time string to a datetime object
-            start_datetime = datetime.datetime.fromisoformat(start_time)
+            # Convert the start time string to a timezone-aware datetime object
+            start_datetime = timezone.make_aware(datetime.datetime.fromisoformat(start_time))
 
             # Delete the availability
             deleted_count, _ = Availability.objects.filter(
@@ -343,14 +342,18 @@ def delete_availability(request):
 @login_required
 def get_availability_for_date(request):
     if request.method == 'GET':
+        date_str = request.GET.get('date')
+
+        if not date_str:
+            return JsonResponse({'status': 'error', 'message': 'Date parameter is missing'}, status=400)
+
         try:
-            date_str = request.GET.get('date')
-            start_date = datetime.datetime.fromisoformat(date_str)
+            # Convert the date string to a date object
+            start_date = datetime.datetime.strptime(date_str, '%Y-%m-%d').date()
+            start_date = timezone.make_aware(datetime.datetime.combine(start_date, datetime.datetime.min.time()))
 
             barber = request.user.barber
-            availabilities = barber.availabilities.filter(
-                start_time__date=start_date.date()
-            )
+            availabilities = barber.availabilities.filter(start_time__date=start_date)
 
             availability_list = [{
                 'start_time': availability.start_time.isoformat(),
@@ -363,7 +366,7 @@ def get_availability_for_date(request):
         except Exception as e:
             return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
 
-        
+
 def list_customers(request):
     customers_with_usernames = Customer.objects.select_related('user')
     customer_usernames = [customer.user.username for customer in customers_with_usernames]
