@@ -4,7 +4,7 @@ from django.utils.translation import gettext_lazy as _
 from django.contrib.auth.hashers import make_password
 import random
 import string
-
+from django.utils import timezone
 from django.contrib.auth.models import User
 from django.conf import settings
 from django.db import models
@@ -62,6 +62,19 @@ class Barber(CustomUser):
 
     def __str__(self):
         return self.username
+
+class Availability(models.Model):
+    barber = models.ForeignKey(Barber, on_delete=models.CASCADE, related_name='availabilities')
+    start_time = models.DateTimeField()
+    end_time = models.DateTimeField()
+    is_available = models.BooleanField(default=True)
+
+    def __str__(self):
+        return f"{self.barber.username} - {self.start_time} to {self.end_time}"
+
+    def is_current(self):
+        now = timezone.now()
+        return self.start_time <= now <= self.end_time and self.is_available
 
 class Haircut(models.Model):
     name = models.CharField(max_length=100)

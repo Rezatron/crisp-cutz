@@ -2,7 +2,7 @@ import requests
 import json
 from django import forms
 from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
-from .models import Barber, Customer
+from .models import Barber, Customer, Availability
 from django.contrib.auth.models import User
 from django.contrib.auth import authenticate, get_user_model
 
@@ -97,6 +97,22 @@ class BarberLoginForm(forms.Form):
 
         return super(BarberLoginForm, self).clean()
     
+
+class AvailabilityForm(forms.ModelForm):
+    class Meta:
+        model = Availability
+        fields = ['start_time', 'end_time', 'is_available']
+        widgets = {
+            'start_time': forms.DateTimeInput(attrs={'type': 'datetime-local'}),
+            'end_time': forms.DateTimeInput(attrs={'type': 'datetime-local'}),
+        }
+
+
+
+
+
+
+
 
 
 class CustomerUpdateForm(forms.ModelForm):

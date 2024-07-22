@@ -1,16 +1,14 @@
 from django.shortcuts import render, redirect
-from django.contrib.auth import authenticate, login, logout, get_user_model
+from django.contrib.auth import authenticate, login, logout
 from django.contrib import messages
-from django.contrib.auth.forms import AuthenticationForm
-from .forms import BarberRegistrationForm, CustomerRegistrationForm, BarberLoginForm, CustomerLoginForm, BarberUpdateForm, CustomerUpdateForm
-from .models import Appointment, CustomUser, Barber, Customer
+from .forms import BarberRegistrationForm, CustomerRegistrationForm, BarberLoginForm, CustomerLoginForm, BarberUpdateForm, CustomerUpdateForm, AvailabilityForm
+from .models import Appointment, Barber, Customer, Availability
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponseRedirect
 from django.conf import settings
 import requests
 
 import sys
-
 print(sys.path)
 
 def home_page(request):
@@ -32,10 +30,8 @@ def barber_register(request):
             barber = form.save(commit=False)
             barber.latitude, barber.longitude = address_to_coordinates(barber.location)
             barber.save()
-            # redirect to the login page:
             return HttpResponseRedirect('/barber/login/')
         else:
-            # Print form errors
             print(form.errors)
     else:
         form = BarberRegistrationForm()
@@ -92,12 +88,11 @@ def barber_login_view(request):
 
 def logout_user(request):
     logout(request)
-    return redirect('home')  # Changed 'home_page' to 'home'
+    return redirect('home')
 
 @login_required
 def dashboard(request):
     return render(request, 'customer_templates/customer_dashboard.html')
-
 
 def address_to_coordinates(address):
     params = {
@@ -113,15 +108,12 @@ def address_to_coordinates(address):
             return lat, lng
     return None, None
 
-
-
 @login_required
 def explore(request):
     customer = request.user.customer
     customer.latitude, customer.longitude = address_to_coordinates(customer.location)
-    barbers = Barber.objects.all()  # Retrieve all Barber instances
+    barbers = Barber.objects.all()
 
-    # Update the location data for each barber and create a list of barbers with their details
     barbers_details = []
     for barber in barbers:
         lat, lng = address_to_coordinates(barber.location)
@@ -130,7 +122,7 @@ def explore(request):
         barber.save()
 
         barbers_details.append({
-            'name': barber.first_name + ' ' + barber.last_name,  # replace with the correct attributes
+            'name': barber.first_name + ' ' + barber.last_name,
             'location': barber.location,
             'latitude': barber.latitude,
             'longitude': barber.longitude,
@@ -138,7 +130,6 @@ def explore(request):
             'experience_years': str(barber.experience_years),
             'service_menu': str(barber.service_menu),
             'profile_picture_url': str(barber.profile_picture.url) if barber.profile_picture else None,
-            # Add any other details you want to display
         })
 
     context = {
@@ -160,7 +151,6 @@ def profile(request):
 
 @login_required
 def update_customer(request):
-    print(request.POST)  # Print the POST data
     if request.method == 'POST':
         form = CustomerUpdateForm(request.POST, instance=request.user.customer)
         if form.is_valid():
@@ -171,7 +161,7 @@ def update_customer(request):
             messages.success(request, f'Your account has been updated!')
             return redirect('customer_profile')
         else:
-            print(form.errors)  # Print the form errors
+            print(form.errors)
     else:
         form = CustomerUpdateForm(instance=request.user.customer)
     return render(request, 'customer_templates/customer_profile.html', {'form': form})
@@ -188,11 +178,8 @@ def barber_appointments(request):
     appointments = Appointment.objects.filter(barber=barber)
     return render(request, 'barber_templates/barber_appointments.html', {'appointments': appointments})
 
-
-
 @login_required
 def barber_reports(request):
-    # You would need to define what data you want to pass for reports
     return render(request, 'barber_templates/barber_reports.html')
 
 @login_required
@@ -212,28 +199,58 @@ def barber_profile(request):
 @login_required
 def update_barber(request):
     if request.method == 'POST':
-        print(request.POST)  # Print the POST data
         form = BarberUpdateForm(request.POST, instance=request.user.barber)
         if form.is_valid():
             barber = form.save(commit=False)
             barber.location = form.cleaned_data.get('location')
             barber.latitude, barber.longitude = address_to_coordinates(barber.location)
-            print(barber.latitude, barber.longitude)  # Print the coordinates
             barber.save()
             messages.success(request, f'Your account has been updated!')
             return redirect('barber_profile')
         else:
-            print(form.errors)  # Print the form errors
+            print(form.errors)
     else:
         form = BarberUpdateForm(instance=request.user.barber)
     return render(request, 'barber_templates/barber_profile.html', {'form': form})
 
 @login_required
 def barber_settings(request):
-    # You would need to define what data you want to pass for settings
-    return render(request, 'barber_templates/barber_settings.html')
+    barber = request.user.barber
 
+    if request.method == 'POST':
+        # Handling the form submission for availability
+        availability_form = AvailabilityForm(request.POST)
+        if availability_form.is_valid():
+            availability = availability_form.save(commit=False)
+            availability.barber = barber
+            availability.save()
+            messages.success(request, 'Availability updated successfully!')
+            return redirect('barber_settings')
+        else:
+            messages.error(request, 'Please correct the errors below.')
+        
+        # Handling the form submission for barber settings (if any)
+        barber_update_form = BarberUpdateForm(request.POST, request.FILES, instance=barber)
+        if barber_update_form.is_valid():
+            barber_update_form.save()
+            messages.success(request, 'Settings updated successfully!')
+            return redirect('barber_settings')
+        else:
+            messages.error(request, 'Please correct the errors below.')
 
+    else:
+        # Initialize forms for GET requests
+        availability_form = AvailabilityForm()
+        barber_update_form = BarberUpdateForm(instance=barber)
+
+    # Retrieve current availabilities
+    availabilities = barber.availabilities.all()
+
+    return render(request, 'barber_templates/barber_settings.html', {
+        'availability_form': availability_form,
+        'availabilities': availabilities,
+        'barber_update_form': barber_update_form,
+    })
 
 def list_customers(request):
     customers_with_usernames = Customer.objects.select_related('user')

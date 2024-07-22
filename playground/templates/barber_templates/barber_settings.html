@@ -8,19 +8,52 @@
     <link rel="stylesheet" href="{% static 'styles.css' %}">
 </head>
 <body>
+
 <div class="tab">
     <a href="{% url 'barber_dashboard' %}" class="tablinks">Dashboard</a>
     <a href="{% url 'barber_appointments' %}" class="tablinks">My Appointments</a>
-
     <a href="{% url 'barber_reports' %}" class="tablinks">Reports</a>
     <a href="{% url 'barber_profile' %}" class="tablinks">Profile</a>
     <a href="{% url 'barber_settings' %}" class="tablinks">Settings</a>
 </div>
-<h3>Barber Settings Content</h3>
+
+<h3>Barber Settings</h3>
 <p>Welcome to the barber settings page!</p>
 
-<span>Hello, {{request.user}}</span>
-<span><a href="{% url 'logout_customer' %}">Logout</a></span>
+<span>Hello, {{ request.user }}</span>
+<span><a href="{% url 'logout_barber' %}">Logout</a></span> <!-- Correct URL name -->
+
+<h3>Manage Availability</h3>
+<form method="post">
+    {% csrf_token %}
+    {{ availability_form.as_p }}
+    <button type="submit">Save Availability</button>
+</form>
+
+{% if form.errors %}
+    <div class="form-errors">
+        <p>There were some errors with your form:</p>
+        <ul>
+            {% for field in form %}
+                {% for error in field.errors %}
+                    <li>{{ field.label }}: {{ error }}</li>
+                {% endfor %}
+            {% endfor %}
+            {% for error in form.non_field_errors %}
+                <li>{{ error }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+{% endif %}
+
+<h3>Current Availability</h3>
+<ul>
+    {% for availability in availabilities %}
+        <li>{{ availability.start_time }} - {{ availability.end_time }} (Available: {{ availability.is_available }})</li>
+    {% empty %}
+        <li>No availability set.</li>
+    {% endfor %}
+</ul>
 
 </body>
 </html>
