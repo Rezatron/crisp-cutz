@@ -218,17 +218,6 @@ def barber_settings(request):
     barber = request.user.barber
 
     if request.method == 'POST':
-        # Handling the form submission for availability
-        availability_form = AvailabilityForm(request.POST)
-        if availability_form.is_valid():
-            availability = availability_form.save(commit=False)
-            availability.barber = barber
-            availability.save()
-            messages.success(request, 'Availability updated successfully!')
-            return redirect('barber_settings')
-        else:
-            messages.error(request, 'Please correct the errors below.')
-        
         # Handling the form submission for barber settings (if any)
         barber_update_form = BarberUpdateForm(request.POST, request.FILES, instance=barber)
         if barber_update_form.is_valid():
@@ -237,20 +226,40 @@ def barber_settings(request):
             return redirect('barber_settings')
         else:
             messages.error(request, 'Please correct the errors below.')
+    else:
+        # Initialize form for GET requests
+        barber_update_form = BarberUpdateForm(instance=barber)
+
+    return render(request, 'barber_templates/barber_settings.html', {
+        'barber_update_form': barber_update_form,
+    })
+
+@login_required
+def manage_availability(request):
+    barber = request.user.barber
+
+    if request.method == 'POST':
+        availability_form = AvailabilityForm(request.POST)
+        if availability_form.is_valid():
+            availability = availability_form.save(commit=False)
+            availability.barber = barber
+            availability.save()
+            messages.success(request, 'Availability updated successfully!')
+            return redirect('manage_availability')
+        else:
+            messages.error(request, 'Please correct the errors below.')
 
     else:
-        # Initialize forms for GET requests
         availability_form = AvailabilityForm()
-        barber_update_form = BarberUpdateForm(instance=barber)
 
     # Retrieve current availabilities
     availabilities = barber.availabilities.all()
 
-    return render(request, 'barber_templates/barber_settings.html', {
+    return render(request, 'barber_templates/manage_availability.html', {
         'availability_form': availability_form,
         'availabilities': availabilities,
-        'barber_update_form': barber_update_form,
     })
+
 
 def list_customers(request):
     customers_with_usernames = Customer.objects.select_related('user')

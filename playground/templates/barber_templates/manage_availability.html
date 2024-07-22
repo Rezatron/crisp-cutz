@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Barber Settings</title>
+    <title>Manage Availability</title>
     <link rel="stylesheet" href="{% static 'styles.css' %}">
 </head>
 <body>
@@ -15,37 +15,40 @@
     <a href="{% url 'barber_reports' %}" class="tablinks">Reports</a>
     <a href="{% url 'barber_profile' %}" class="tablinks">Profile</a>
     <a href="{% url 'barber_settings' %}" class="tablinks">Settings</a>
+    <a href="{% url 'manage_availability' %}" class="tablinks">Manage Availability</a>
 </div>
 
-<h3>Barber Settings</h3>
-<p>Welcome to the barber settings page!</p>
+<h3>Manage Availability</h3>
+<form method="post">
+    {% csrf_token %}
+    {{ availability_form.as_p }}
+    <button type="submit">Save Availability</button>
+</form>
 
-<span>Hello, {{ request.user }}</span>
-<span><a href="{% url 'logout_barber' %}">Logout</a></span> <!-- Correct URL name -->
-
-<h3><a href="{% url 'manage_availability' %}">Manage Availability</a></h3>
-
-{% if barber_update_form.errors %}
+{% if availability_form.errors %}
     <div class="form-errors">
         <p>There were some errors with your form:</p>
         <ul>
-            {% for field in barber_update_form %}
+            {% for field in availability_form %}
                 {% for error in field.errors %}
                     <li>{{ field.label }}: {{ error }}</li>
                 {% endfor %}
             {% endfor %}
-            {% for error in barber_update_form.non_field_errors %}
+            {% for error in availability_form.non_field_errors %}
                 <li>{{ error }}</li>
             {% endfor %}
         </ul>
     </div>
 {% endif %}
 
-<form method="post" enctype="multipart/form-data">
-    {% csrf_token %}
-    {{ barber_update_form.as_p }}
-    <button type="submit">Save Settings</button>
-</form>
+<h3>Current Availability</h3>
+<ul>
+    {% for availability in availabilities %}
+        <li>{{ availability.start_time }} - {{ availability.end_time }} (Available: {{ availability.is_available }})</li>
+    {% empty %}
+        <li>No availability set.</li>
+    {% endfor %}
+</ul>
 
 </body>
 </html>
