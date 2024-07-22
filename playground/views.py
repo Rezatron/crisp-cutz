@@ -1,16 +1,17 @@
 from django.shortcuts import render, redirect
 from django.contrib.auth import authenticate, login, logout
 from django.contrib import messages
-from .forms import BarberRegistrationForm, CustomerRegistrationForm, BarberLoginForm, CustomerLoginForm, BarberUpdateForm, CustomerUpdateForm, AvailabilityForm
+from .forms import (BarberRegistrationForm, CustomerRegistrationForm,
+                    BarberLoginForm, CustomerLoginForm, BarberUpdateForm,
+                    CustomerUpdateForm, AvailabilityForm)
 from .models import Appointment, Barber, Customer, Availability
 from django.contrib.auth.decorators import login_required
-from django.http import HttpResponseRedirect, JsonResponse
+from django.http import JsonResponse, HttpResponseRedirect
 from django.conf import settings
 import requests
 from django.views.decorators.csrf import csrf_exempt
-from django.views.decorators.csrf import csrf_exempt
-import sys, json
-print(sys.path)
+import json
+import datetime  # Import datetime
 
 def home_page(request):
     return render(request, 'home.html')
@@ -260,6 +261,7 @@ def manage_availability(request):
         'availability_form': availability_form,
         'availabilities': availabilities,
     })
+
 @login_required
 def get_availability(request):
     barber = request.user.barber
@@ -278,37 +280,29 @@ def get_availability(request):
 
 @csrf_exempt
 @login_required
-def add_availability(request):
+def set_availability(request):
     if request.method == 'POST':
-        data = json.loads(request.body)
-        start_time = data['start_time']
-        end_time = data['end_time']
-        title = data['title']
-        barber = request.user.barber
+        try:
+            data = json.loads(request.body)
+            start_time = data['start_time']
+            end_time = data['end_time']
+            barber = request.user.barber
 
-        Availability.objects.create(
-            barber=barber,
-            start_time=start_time,
-            end_time=end_time,
-            is_available=True
-        )
-        return JsonResponse({'status': 'success'})
+            # Convert the date and time strings to datetime objects
+            start_datetime = datetime.datetime.fromisoformat(start_time)
+            end_datetime = datetime.datetime.fromisoformat(end_time)
 
-@csrf_exempt
-@login_required
-def update_availability(request, event_id):
-    if request.method == 'POST':
-        data = json.loads(request.body)
-        title = data['title']
-        start_time = data['start_time']
-        end_time = data['end_time']
-        barber = request.user.barber
-
-        availability = Availability.objects.get(id=event_id, barber=barber)
-        availability.start_time = start_time
-        availability.end_time = end_time
-        availability.save()
-        return JsonResponse({'status': 'success'})
+            Availability.objects.create(
+                barber=barber,
+                start_time=start_datetime,
+                end_time=end_datetime,
+                is_available=True
+            )
+            return JsonResponse({'status': 'success'})
+        except KeyError as e:
+            return JsonResponse({'status': 'error', 'message': f'Missing key: {e}'}, status=400)
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
 
 def list_customers(request):
     customers_with_usernames = Customer.objects.select_related('user')
