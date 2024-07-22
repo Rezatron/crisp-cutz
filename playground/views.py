@@ -4,11 +4,12 @@ from django.contrib import messages
 from .forms import BarberRegistrationForm, CustomerRegistrationForm, BarberLoginForm, CustomerLoginForm, BarberUpdateForm, CustomerUpdateForm, AvailabilityForm
 from .models import Appointment, Barber, Customer, Availability
 from django.contrib.auth.decorators import login_required
-from django.http import HttpResponseRedirect
+from django.http import HttpResponseRedirect, JsonResponse
 from django.conf import settings
 import requests
-
-import sys
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.csrf import csrf_exempt
+import sys, json
 print(sys.path)
 
 def home_page(request):
@@ -259,7 +260,55 @@ def manage_availability(request):
         'availability_form': availability_form,
         'availabilities': availabilities,
     })
+@login_required
+def get_availability(request):
+    barber = request.user.barber
+    availabilities = barber.availabilities.all()
+    availability_list = []
 
+    for availability in availabilities:
+        availability_list.append({
+            'id': availability.id,
+            'title': 'Available',
+            'start': availability.start_time.isoformat(),
+            'end': availability.end_time.isoformat(),
+        })
+
+    return JsonResponse(availability_list, safe=False)
+
+@csrf_exempt
+@login_required
+def add_availability(request):
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        start_time = data['start_time']
+        end_time = data['end_time']
+        title = data['title']
+        barber = request.user.barber
+
+        Availability.objects.create(
+            barber=barber,
+            start_time=start_time,
+            end_time=end_time,
+            is_available=True
+        )
+        return JsonResponse({'status': 'success'})
+
+@csrf_exempt
+@login_required
+def update_availability(request, event_id):
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        title = data['title']
+        start_time = data['start_time']
+        end_time = data['end_time']
+        barber = request.user.barber
+
+        availability = Availability.objects.get(id=event_id, barber=barber)
+        availability.start_time = start_time
+        availability.end_time = end_time
+        availability.save()
+        return JsonResponse({'status': 'success'})
 
 def list_customers(request):
     customers_with_usernames = Customer.objects.select_related('user')

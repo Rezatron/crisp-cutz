@@ -30,7 +30,12 @@ urlpatterns = [
     path('barber/reports/', views.barber_reports, name='barber_reports'),
     path('barber/profile/', views.barber_profile, name='barber_profile'),
     path('barber/settings/', views.barber_settings, name='barber_settings'),
+    
     path('barber/manage_availability/', views.manage_availability, name='manage_availability'),
+    path('get_availability/', views.get_availability, name='get_availability'),
+    path('add_availability/', views.add_availability, name='add_availability'),
+    path('update_availability/<int:event_id>/', views.update_availability, name='update_availability'),
+
 
     path('barber/update/', views.update_barber, name='update_barber'),
 

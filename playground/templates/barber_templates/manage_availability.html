@@ -1,54 +1,279 @@
-{% load static %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Manage Availability</title>
-    <link rel="stylesheet" href="{% static 'styles.css' %}">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+        }
+        .calendar-container {
+            max-width: 900px;
+            margin: 20px auto;
+            text-align: center;
+        }
+        .calendar-header {
+            margin-bottom: 20px;
+        }
+        .calendar {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 1px;
+        }
+        .header, .day {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: center;
+            position: relative;
+            background-color: #fff;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+        .header {
+            font-weight: bold;
+            background-color: #007bff;
+            color: white;
+        }
+        .day:hover {
+            background-color: #e0e0e0;
+            cursor: pointer;
+        }
+        .day .availability-button {
+            display: block;
+            margin-top: 10px;
+            padding: 8px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .day .availability-button:hover {
+            background-color: #0056b3;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0, 0, 0, 0.5);
+            padding-top: 60px;
+        }
+        .modal-content {
+            background-color: #fff;
+            margin: 5% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+            max-width: 500px;
+            border-radius: 8px;
+        }
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+        }
+        .close:hover,
+        .close:focus {
+            color: #000;
+            text-decoration: none;
+            cursor: pointer;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        .form-group input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .form-group button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            width: 100%;
+            font-size: 16px;
+        }
+        .form-group button:hover {
+            background-color: #0056b3;
+        }
+    </style>
 </head>
 <body>
 
-<div class="tab">
-    <a href="{% url 'barber_dashboard' %}" class="tablinks">Dashboard</a>
-    <a href="{% url 'barber_appointments' %}" class="tablinks">My Appointments</a>
-    <a href="{% url 'barber_reports' %}" class="tablinks">Reports</a>
-    <a href="{% url 'barber_profile' %}" class="tablinks">Profile</a>
-    <a href="{% url 'barber_settings' %}" class="tablinks">Settings</a>
-    <a href="{% url 'manage_availability' %}" class="tablinks">Manage Availability</a>
+<div class="calendar-container">
+    <div class="calendar-header">
+        <button id="prevMonth">Previous</button>
+        <span id="monthYear"></span>
+        <button id="nextMonth">Next</button>
+    </div>
+    <div id="calendar" class="calendar"></div>
 </div>
 
-<h3>Manage Availability</h3>
-<form method="post">
-    {% csrf_token %}
-    {{ availability_form.as_p }}
-    <button type="submit">Save Availability</button>
-</form>
-
-{% if availability_form.errors %}
-    <div class="form-errors">
-        <p>There were some errors with your form:</p>
-        <ul>
-            {% for field in availability_form %}
-                {% for error in field.errors %}
-                    <li>{{ field.label }}: {{ error }}</li>
-                {% endfor %}
-            {% endfor %}
-            {% for error in availability_form.non_field_errors %}
-                <li>{{ error }}</li>
-            {% endfor %}
-        </ul>
+<!-- Modal -->
+<div id="availabilityModal" class="modal">
+    <div class="modal-content">
+        <span class="close">&times;</span>
+        <h2>Set Availability</h2>
+        <form id="availabilityForm">
+            <input type="hidden" id="selectedDate" name="date">
+            <div class="form-group">
+                <label for="startTime">Start Time:</label>
+                <input type="datetime-local" id="startTime" name="start_time" required>
+            </div>
+            <div class="form-group">
+                <label for="endTime">End Time:</label>
+                <input type="datetime-local" id="endTime" name="end_time" required>
+            </div>
+            <div class="form-group">
+                <button type="submit">Save Availability</button>
+            </div>
+        </form>
     </div>
-{% endif %}
+</div>
 
-<h3>Current Availability</h3>
-<ul>
-    {% for availability in availabilities %}
-        <li>{{ availability.start_time }} - {{ availability.end_time }} (Available: {{ availability.is_available }})</li>
-    {% empty %}
-        <li>No availability set.</li>
-    {% endfor %}
-</ul>
+<script>
+    let currentYear = new Date().getFullYear();
+    let currentMonth = new Date().getMonth();
+
+    function createCalendar(year, month) {
+        const calendarEl = document.getElementById('calendar');
+        const monthYearEl = document.getElementById('monthYear');
+        calendarEl.innerHTML = '';
+
+        // Days of the week header
+        const daysOfWeek = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+        daysOfWeek.forEach(day => {
+            const headerEl = document.createElement('div');
+            headerEl.className = 'header';
+            headerEl.textContent = day;
+            calendarEl.appendChild(headerEl);
+        });
+
+        const daysInMonth = new Date(year, month + 1, 0).getDate();
+        const firstDay = new Date(year, month, 1).getDay();
+
+        // Add empty cells for the days before the first day of the month
+        for (let i = 0; i < firstDay; i++) {
+            const dayEl = document.createElement('div');
+            dayEl.className = 'day';
+            calendarEl.appendChild(dayEl);
+        }
+
+        // Add days of the month
+        for (let day = 1; day <= daysInMonth; day++) {
+            const dayEl = document.createElement('div');
+            dayEl.className = 'day';
+            dayEl.textContent = day;
+            dayEl.dataset.date = `${year}-${month + 1}-${day}`;
+            dayEl.innerHTML += `<button class="availability-button" onclick="openAvailabilityModal('${dayEl.dataset.date}')">Set Availability</button>`;
+            calendarEl.appendChild(dayEl);
+        }
+
+        // Update month and year display
+        monthYearEl.textContent = `${month + 1}/${year}`;
+    }
+
+    function openAvailabilityModal(date) {
+        const modal = document.getElementById('availabilityModal');
+        const closeBtn = document.querySelector('.modal .close');
+        const dateInput = document.getElementById('selectedDate');
+        const startTimeInput = document.getElementById('startTime');
+        const endTimeInput = document.getElementById('endTime');
+        const form = document.getElementById('availabilityForm');
+
+        dateInput.value = date;
+        const [year, month, day] = date.split('-');
+        const startDate = new Date(year, month - 1, day, 9); // Default start time to 09:00
+        const endDate = new Date(year, month - 1, day, 17); // Default end time to 17:00
+
+        startTimeInput.value = startDate.toISOString().slice(0, 16);
+        endTimeInput.value = endDate.toISOString().slice(0, 16);
+
+        modal.style.display = "block";
+
+        closeBtn.onclick = function() {
+            modal.style.display = "none";
+        }
+
+        window.onclick = function(event) {
+            if (event.target === modal) {
+                modal.style.display = "none";
+            }
+        }
+
+        form.onsubmit = function(event) {
+            event.preventDefault();
+            const formData = new FormData(form);
+
+            fetch('/set_availability/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: JSON.stringify({
+                    date: formData.get('date'),
+                    start_time: formData.get('start_time'),
+                    end_time: formData.get('end_time')
+                })
+            }).then(response => response.json())
+              .then(data => {
+                  if (data.status === 'success') {
+                      alert('Availability updated');
+                      modal.style.display = "none";
+                      createCalendar(currentYear, currentMonth); // Refresh calendar to reflect changes
+                  } else {
+                      alert('Error updating availability');
+                  }
+              }).catch(error => {
+                  console.error('Error:', error);
+                  alert('Error updating availability');
+              });
+        }
+    }
+
+    document.getElementById('prevMonth').onclick = function() {
+        if (currentMonth === 0) {
+            currentMonth = 11;
+            currentYear--;
+        } else {
+            currentMonth--;
+        }
+        createCalendar(currentYear, currentMonth);
+    }
+
+    document.getElementById('nextMonth').onclick = function() {
+        if (currentMonth === 11) {
+            currentMonth = 0;
+            currentYear++;
+        } else {
+            currentMonth++;
+        }
+        createCalendar(currentYear, currentMonth);
+    }
+
+    // Initialize calendar with current month
+    createCalendar(currentYear, currentMonth);
+</script>
 
 </body>
 </html>
