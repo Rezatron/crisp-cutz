@@ -1,42 +1,37 @@
-from django.urls import path, include
-from . import views
-
+from django.urls import path
+from .views.common_views import home_page, role_selection_view, logout_user, list_customers
+from .views.customer_views import (
+    customer_register, customer_login_view, dashboard, explore, appointments, profile, update_customer
+)
+from .views.barber_views import barber_register, barber_login_view, barber_dashboard, barber_appointments, barber_reports, barber_profile, update_barber, barber_settings, manage_availability, get_availability, set_availability, delete_availability, get_availability_for_date
+from .views.barber_views import (
+    manage_availability, get_availability, set_availability, delete_availability, get_availability_for_date)
 urlpatterns = [
-    # Registration
-    path('register/', views.role_selection_view, name='register_page'),
-    path('register/barber/', views.barber_register, name='barber_register'),
-    path('register/customer/', views.customer_register, name='customer_register'),
-    path('role-selection/', views.role_selection_view, name='role_selection_view'),
+    path('', home_page, name='home'),
+    path('register/', role_selection_view, name='role_selection'),
+    path('logout/', logout_user, name='logout'),
+    path('logout/barber/', logout_user, name='logout_barber'),  # Specific logout for barbers
+    path('logout/customer/', logout_user, name='logout_customer'),  # Specific logout for customers
+    path('customer/register/', customer_register, name='customer_register'),
+    path('customer/login/', customer_login_view, name='customer_login'),
+    path('dashboard/', dashboard, name='dashboard'),
+    path('explore/', explore, name='customer_explore'),
+    path('appointments/', appointments, name='customer_appointments'),
+    path('profile/', profile, name='customer_profile'),
+    path('profile/update/', update_customer, name='update_customer'),
+    path('barber/register/', barber_register, name='barber_register'),
+    path('barber/login/', barber_login_view, name='barber_login'),
+    path('barber/dashboard/', barber_dashboard, name='barber_dashboard'),
+    path('barber/appointments/', barber_appointments, name='barber_appointments'),
+    path('barber/reports/', barber_reports, name='barber_reports'),
+    path('barber/profile/', barber_profile, name='barber_profile'),
+    path('barber/profile/update/', update_barber, name='update_barber'),
+    path('barber/settings/', barber_settings, name='barber_settings'),
+    path('barber/availability/', manage_availability, name='manage_availability'),
+    path('barber/availability/get/', get_availability, name='get_availability'),
+    path('barber/availability/set/', set_availability, name='set_availability'),
+    path('barber/availability/delete/', delete_availability, name='delete_availability'),
+    path('barber/availability/date/', get_availability_for_date, name='get_availability_for_date'),
 
-    # Login URLs
-    path('barber/login/', views.barber_login_view, name='barber_login'),
-    path('customer/login/', views.customer_login_view, name='customer_login'),
-
-    # Logout URLs
-    path('customer/logout/', views.logout_user, name='logout_customer'),
-    path('barber/logout/', views.logout_user, name='logout_barber'),
-
-    # After customer has logged in
-    path('customer_dashboard/', views.dashboard, name='customer_dashboard'),
-    path('customer_explore/', views.explore, name='customer_explore'),
-    path('customer_appointments/', views.appointments, name='customer_appointments'),
-    path('customer_profile/', views.profile, name='customer_profile'),
-    path('customer_profile/update/', views.update_customer, name='update_customer'),
-
-    # After barber has logged in
-    path('barber/dashboard/', views.barber_dashboard, name='barber_dashboard'),
-    path('barber/appointments/', views.barber_appointments, name='barber_appointments'),
-    path('barber/reports/', views.barber_reports, name='barber_reports'),
-    path('barber/profile/', views.barber_profile, name='barber_profile'),
-    path('barber/settings/', views.barber_settings, name='barber_settings'),
-    path('barber/manage_availability/', views.manage_availability, name='manage_availability'),
-    path('get_availability/', views.get_availability, name='get_availability'),
-    path('set_availability/', views.set_availability, name='set_availability'),
-
-    # Add the following two URL patterns:
-    path('get_availability_for_date/', views.get_availability_for_date, name='get_availability_for_date'),
-    path('delete_availability/', views.delete_availability, name='delete_availability'),
-
-    path('barber/update/', views.update_barber, name='update_barber'),
-    path('accounts/', include('django.contrib.auth.urls')),
+    path('customers/', list_customers, name='list_customers'),
 ]

@@ -141,7 +141,7 @@
     }
 
     function fetchAvailability() {
-        fetch('/get_availability/')
+        fetch('{% url "get_availability" %}')
             .then(response => response.json())
             .then(data => {
                 data.forEach(entry => {
@@ -168,7 +168,7 @@
         endTimeInput.value = endDate.toISOString().slice(0, 16);
 
         // Fetch existing availability for the selected date
-        fetch(`/get_availability_for_date/?date=${date}`)
+        fetch(`{% url "get_availability_for_date" %}?date=${date}`)
             .then(response => {
                 if (response.ok) {
                     return response.json();
@@ -206,7 +206,7 @@
             event.preventDefault();
             const formData = new FormData(form);
 
-            fetch('/set_availability/', {
+            fetch('{% url "set_availability" %}', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -241,7 +241,7 @@
         deleteButton.onclick = function() {
             const startTime = startTimeInput.value;
 
-            fetch('/delete_availability/', {
+            fetch('{% url "delete_availability" %}', {
                 method: 'DELETE',
                 headers: {
                     'Content-Type': 'application/json',
