@@ -27,19 +27,31 @@ def logout_user(request):
     logout(request)
     return redirect('home')
 
+
 def address_to_coordinates(address):
     params = {
         'address': address,
         'key': settings.GOOGLE_MAPS_API_KEY
     }
     response = requests.get('https://maps.googleapis.com/maps/api/geocode/json', params=params)
+    
+    # Debugging: print status code and response
+    print(f"Status Code: {response.status_code}")
+    print(f"Response JSON: {response.json()}")
+
     if response.status_code == 200:
         data = response.json()
         if data['results']:
             lat = data['results'][0]['geometry']['location']['lat']
             lng = data['results'][0]['geometry']['location']['lng']
             return lat, lng
+        else:
+            print("No results found for the address.")
+    else:
+        print("Error in response from Google Maps API.")
+    
     return None, None
+
 
 def list_customers(request):
     customers_with_usernames = Customer.objects.select_related('user')

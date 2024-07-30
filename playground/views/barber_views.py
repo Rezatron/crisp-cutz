@@ -75,19 +75,23 @@ def barber_profile(request):
 
 @login_required
 def update_barber(request):
+    barber = request.user.barber
+
     if request.method == 'POST':
-        form = BarberUpdateForm(request.POST, instance=request.user.barber)
+        form = BarberUpdateForm(request.POST, request.FILES, instance=barber)
         if form.is_valid():
             barber = form.save(commit=False)
             barber.location = form.cleaned_data.get('location')
             barber.latitude, barber.longitude = address_to_coordinates(barber.location)
             barber.save()
-            messages.success(request, f'Your account has been updated!')
+            messages.success(request, 'Your account has been updated!')
             return redirect('barber_profile')
         else:
+            messages.error(request, 'Please correct the errors below.')
             print(form.errors)
     else:
-        form = BarberUpdateForm(instance=request.user.barber)
+        form = BarberUpdateForm(instance=barber)
+
     return render(request, 'barber_templates/barber_profile.html', {'form': form})
 
 @login_required

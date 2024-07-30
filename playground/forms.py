@@ -7,7 +7,8 @@ from django.contrib.auth.models import User
 from django.contrib.auth import authenticate, get_user_model
 from .utils import is_barber_available
 from django.core.exceptions import ValidationError
-
+from .views.common_views import address_to_coordinates
+from django.conf import settings
 class BarberRegistrationForm(UserCreationForm):
     email = forms.EmailField(required=True)
     bio = forms.CharField(max_length=500, required=True)
@@ -28,7 +29,7 @@ class BarberRegistrationForm(UserCreationForm):
     def clean_location(self):
         location = self.cleaned_data.get('location')
         if location:
-            response = requests.get(f'https://maps.googleapis.com/maps/api/geocode/json?address={location}&key=YOUR_API_KEY')
+            response = requests.get(f'https://maps.googleapis.com/maps/api/geocode/json?address={location}&key={settings.GOOGLE_MAPS_API_KEY}')
             response_json = response.json()
             if response.status_code != 200 or response_json['status'] != 'OK':
                 raise ValidationError("Invalid location")
@@ -53,7 +54,7 @@ class CustomerRegistrationForm(UserCreationForm):
     def clean_location(self):
         location = self.cleaned_data.get('location')
         if location:
-            response = requests.get(f'https://maps.googleapis.com/maps/api/geocode/json?address={location}&key=YOUR_API_KEY')
+            response = requests.get(f'https://maps.googleapis.com/maps/api/geocode/json?address={location}&key={settings.GOOGLE_MAPS_API_KEY}')
             response_json = response.json()
             if response.status_code != 200 or response_json['status'] != 'OK':
                 raise ValidationError("Invalid location")
@@ -117,7 +118,7 @@ class CustomerUpdateForm(forms.ModelForm):
     def clean_location(self):
         location = self.cleaned_data.get('location')
         if location:
-            response = requests.get(f'https://maps.googleapis.com/maps/api/geocode/json?address={location}&key=YOUR_API_KEY')
+            response = requests.get(f'https://maps.googleapis.com/maps/api/geocode/json?address={location}&key={settings.GOOGLE_MAPS_API_KEY}')
             response_json = response.json()
             if response.status_code != 200 or response_json['status'] != 'OK':
                 raise ValidationError("Invalid location")
@@ -148,7 +149,7 @@ class BarberUpdateForm(forms.ModelForm):
     def clean_location(self):
         location = self.cleaned_data.get('location')
         if location:
-            response = requests.get(f'https://maps.googleapis.com/maps/api/geocode/json?address={location}&key=YOUR_API_KEY')
+            response = requests.get(f'https://maps.googleapis.com/maps/api/geocode/json?address={location}&key={settings.GOOGLE_MAPS_API_KEY}')
             response_json = response.json()
             if response.status_code != 200 or response_json['status'] != 'OK':
                 raise ValidationError("Invalid location")
