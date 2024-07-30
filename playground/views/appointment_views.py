@@ -1,8 +1,10 @@
+# appointment_views.py
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.utils import timezone
-from ..models import Barber, Haircut, Appointment, Availability
+from ..models import Barber, Service, Appointment, AppointmentService
 from ..forms import AppointmentForm
+from ..utils import is_barber_available  # Import from utils.py
 
 @login_required
 def create_appointment(request):
@@ -10,9 +12,11 @@ def create_appointment(request):
         form = AppointmentForm(request.POST)
         if form.is_valid():
             barber = form.cleaned_data['barber']
-            haircut = form.cleaned_data['haircut']
+            services = form.cleaned_data['services']
             start_time = form.cleaned_data['date_time']
-            end_time = start_time + haircut.duration
+            # Calculate end_time based on the total duration of selected services
+            total_duration = sum(service.duration.total_seconds() for service in services)
+            end_time = start_time + timezone.timedelta(seconds=total_duration)
 
             # Check barber availability
             if not is_barber_available(barber, start_time, end_time):
@@ -20,19 +24,16 @@ def create_appointment(request):
             else:
                 appointment = form.save(commit=False)
                 appointment.user = request.user
-                appointment.end_time = end_time  # Add end_time to the appointment
+                appointment.end_time = end_time
                 appointment.save()
+                
+                for service in services:
+                    AppointmentService.objects.create(appointment=appointment, service=service)
+                
                 return redirect('appointment_detail', appointment.id)
     else:
         form = AppointmentForm()
     return render(request, 'appointments/create.html', {'form': form})
-
-def is_barber_available(barber, start_time, end_time):
-    availabilities = barber.availabilities.filter(
-        start_time__lte=start_time, end_time__gte=end_time, is_available=True)
-    overlapping_appointments = Appointment.objects.filter(
-        barber=barber, date_time__lt=end_time, end_time__gt=start_time)
-    return availabilities.exists() and not overlapping_appointments.exists()
 
 @login_required
 def appointment_list(request):
@@ -42,4 +43,5 @@ def appointment_list(request):
 @login_required
 def appointment_detail(request, appointment_id):
     appointment = get_object_or_404(Appointment, id=appointment_id)
-    return render(request, 'appointments/detail.html', {'appointment': appointment})
+    appointment_services = AppointmentService.objects.filter(appointment=appointment)
+    return render(request, 'appointments/detail.html', {'appointment': appointment, 'appointment_services': appointment_services})

@@ -9,7 +9,6 @@ import json
 from django.utils import timezone
 import datetime
 
-from ..forms import BarberRegistrationForm, CustomerRegistrationForm, BarberLoginForm, CustomerLoginForm, BarberUpdateForm, CustomerUpdateForm, AvailabilityForm
 from ..models import Appointment, Barber, Customer, Availability
 
 def home_page(request):

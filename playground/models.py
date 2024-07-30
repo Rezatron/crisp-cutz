@@ -5,11 +5,8 @@ from django.contrib.auth.hashers import make_password
 import random
 import string
 from django.utils import timezone
-from django.contrib.auth.models import User
 from django.conf import settings
-from django.db import models
-
-
+from datetime import timedelta
 
 class CustomUser(AbstractUser):
     first_name = models.CharField(_('first name'), max_length=30, blank=True)
@@ -21,13 +18,12 @@ class CustomUser(AbstractUser):
         super().save(*args, **kwargs)
 
 class Customer(CustomUser):
-    # Fields specific to customers
-
     phone_number = models.CharField(max_length=20, blank=True, null=True)
     notification_preferences = models.CharField(max_length=100, blank=True, null=True)
     location = models.CharField(max_length=255, blank=True, null=True)
+    latitude = models.FloatField(null=True, blank=True)
+    longitude = models.FloatField(null=True, blank=True)
 
-    # Override the groups field
     customer_groups = models.ManyToManyField(
         'auth.Group',
         verbose_name=_('groups'),
@@ -49,13 +45,12 @@ class Barber(CustomUser):
     booking_preferences = models.TextField(blank=True, null=True)
     location = models.CharField(max_length=255, blank=True, null=True)
     latitude = models.FloatField(null=True, blank=True)
-    longitude = models.FloatField(null=True, blank=True)   
-    specialization = models.CharField(max_length=100, default='General')  # Specialization field with default value
+    longitude = models.FloatField(null=True, blank=True)
+    specialization = models.CharField(max_length=100, default='General')
 
     class Meta:
         ordering = ['id', 'username', 'email', 'first_name', 'last_name', 'bio', 'experience_years', 'is_available', 'service_menu', 'booking_preferences', 'location', 'specialization',]
         permissions = [
-            # existing permissions here
             ("view_appointment", "Can view appointments"),
             ("delete_appointment", "Can delete appointments"),
         ]
@@ -76,26 +71,41 @@ class Availability(models.Model):
         now = timezone.now()
         return self.start_time <= now <= self.end_time and self.is_available
 
-class Haircut(models.Model):
+    def is_available_for_appointment(self, start_time, end_time):
+        """Check if the availability covers the requested appointment time."""
+        return self.start_time <= start_time and self.end_time >= end_time and self.is_available
+
+class Service(models.Model):
     name = models.CharField(max_length=100)
+    duration = models.DurationField()  # Duration of the service
     price = models.DecimalField(max_digits=10, decimal_places=2)
-    duration = models.DurationField()
-    # Add more fields as needed
+    
+    def __str__(self):
+        return self.name
 
 class Appointment(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='user_appointments')
     barber = models.ForeignKey(Barber, on_delete=models.CASCADE, related_name='barber_appointments')
-    haircut = models.ForeignKey(Haircut, on_delete=models.CASCADE)
+    services = models.ManyToManyField(Service, through='AppointmentService')
     date_time = models.DateTimeField()
+    end_time = models.DateTimeField()
 
     def __str__(self):
-        return f"Appointment for {self.haircut} with {self.barber} on {self.date_time}"
+        return f"Appointment with {self.barber} on {self.date_time}"
+
+class AppointmentService(models.Model):
+    appointment = models.ForeignKey(Appointment, on_delete=models.CASCADE)
+    service = models.ForeignKey(Service, on_delete=models.CASCADE)
+    quantity = models.PositiveIntegerField(default=1)  # Quantity of the service
+
+    def __str__(self):
+        return f"{self.quantity} x {self.service.name} for appointment {self.appointment.id}"
 
 class Review(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='user_reviews')
     barber = models.ForeignKey(Barber, on_delete=models.CASCADE, related_name='barber_reviews')
     stars = models.IntegerField()
-    haircut_type = models.CharField(max_length=100)
+    service_type = models.CharField(max_length=100)  # Changed to service_type
     review_text = models.TextField(blank=True, null=True)
 
     def __str__(self):
