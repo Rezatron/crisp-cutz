@@ -6,6 +6,8 @@ from .views.customer_views import (
 from .views.barber_views import barber_register, barber_login_view, barber_dashboard, barber_appointments, barber_reports, barber_profile, update_barber, barber_settings, manage_availability, get_availability, set_availability, delete_availability, get_availability_for_date
 from .views.barber_views import (
     manage_availability, get_availability, set_availability, delete_availability, get_availability_for_date)
+from .views import appointment_views
+from .views.appointment_views import create_appointment, appointment_list, appointment_detail
 urlpatterns = [
     path('', home_page, name='home'),
     path('register/', role_selection_view, name='role_selection'),
@@ -34,4 +36,9 @@ urlpatterns = [
     path('barber/availability/date/', get_availability_for_date, name='get_availability_for_date'),
 
     path('customers/', list_customers, name='list_customers'),
+
+    path('appointments/create/', appointment_views.create_appointment, name='create_appointment'),
+    path('appointments/', appointment_views.appointment_list, name='appointment_list'),
+    path('appointments/<int:appointment_id>/', appointment_views.appointment_detail, name='appointment_detail'),
+
 ]

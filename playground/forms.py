@@ -2,7 +2,7 @@ import requests
 import json
 from django import forms
 from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
-from .models import Barber, Customer, Availability
+from .models import Barber, Customer, Availability, Appointment, Haircut
 from django.contrib.auth.models import User
 from django.contrib.auth import authenticate, get_user_model
 
@@ -184,3 +184,19 @@ class BarberUpdateForm(forms.ModelForm):
             self.instance.longitude = lng
             return formatted_address
         return location
+    
+
+
+
+class AppointmentForm(forms.ModelForm):
+    class Meta:
+        model = Appointment
+        fields = ['barber', 'haircut', 'date_time']
+        widgets = {
+            'date_time': forms.DateTimeInput(attrs={'type': 'datetime-local'}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['barber'].queryset = Barber.objects.filter(is_available=True)
+        self.fields['haircut'].queryset = Haircut.objects.all()
