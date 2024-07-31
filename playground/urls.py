@@ -41,4 +41,8 @@ urlpatterns = [
     path('appointments/', appointment_views.appointment_list, name='appointment_list'),
     path('appointments/<int:appointment_id>/', appointment_views.appointment_detail, name='appointment_detail'),
 
+
+    path('appointments/', appointment_views.appointment_list, name='appointment_list'),
+    path('appointments/create/', appointment_views.create_appointment, name='create_appointment'),
+    path('appointments/<int:appointment_id>/', appointment_views.appointment_detail, name='appointment_detail'),
 ]

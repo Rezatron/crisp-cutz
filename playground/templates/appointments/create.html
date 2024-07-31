@@ -1,10 +1,41 @@
-{% extends "base_generic.html" %}
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create Appointment</title>
+    <link rel="stylesheet" href="{% static 'styles.css' %}">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        $(document).ready(function() {
+            $('form').on('submit', function(event) {
+                event.preventDefault(); // Prevent default form submission
 
-{% block content %}
-  <h2>Create Appointment</h2>
-  <form method="post">
-    {% csrf_token %}
-    {{ form.as_p }}
-    <button type="submit">Book Appointment</button>
-  </form>
-{% endblock %}
+                $.ajax({
+                    url: $(this).attr('action'),
+                    type: 'POST',
+                    data: $(this).serialize(),
+                    success: function(response) {
+                        // Handle success
+                        alert('Appointment booked successfully!');
+                        window.location.href = response.redirect_url; // Redirect to the appointment detail page
+                    },
+                    error: function(response) {
+                        // Handle errors
+                        alert('An error occurred: ' + response.responseJSON.error);
+                    }
+                });
+            });
+        });
+    </script>
+</head>
+<body>
+    <h2>Create Appointment</h2>
+    <form method="post" action="{% url 'create_appointment' %}">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit">Book Appointment</button>
+    </form>
+</body>
+</html>
