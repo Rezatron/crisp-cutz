@@ -61,6 +61,7 @@ def explore(request):
         barber.save()
 
         barbers_details.append({
+            'id': barber.id,
             'name': barber.first_name + ' ' + barber.last_name,
             'location': barber.location,
             'latitude': barber.latitude,
@@ -70,14 +71,16 @@ def explore(request):
             'service_menu': str(barber.service_menu),
             'profile_picture_url': str(barber.profile_picture.url) if barber.profile_picture else None,
         })
-
+    print(barbers_details)
     context = {
         'customer': customer,
         'latitude': customer.latitude,
         'longitude': customer.longitude,
         'barbers_details': barbers_details,
+        'has_barbers': bool(barbers_details),  # Add this line
     }
     return render(request, 'customer_templates/customer_explore.html', context)
+
 
 @login_required
 def appointments(request):

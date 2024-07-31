@@ -4,38 +4,205 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Create Appointment</title>
+    <title>Book an Appointment</title>
     <link rel="stylesheet" href="{% static 'styles.css' %}">
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script>
-        $(document).ready(function() {
-            $('form').on('submit', function(event) {
-                event.preventDefault(); // Prevent default form submission
+    $(document).ready(function() {
+        // Initialize Flatpickr for date and time selection
+        flatpickr("#id_date", {
+            minDate: "today",
+            dateFormat: "Y-m-d",
+            locale: "en"
+        });
 
-                $.ajax({
-                    url: $(this).attr('action'),
-                    type: 'POST',
-                    data: $(this).serialize(),
-                    success: function(response) {
-                        // Handle success
-                        alert('Appointment booked successfully!');
-                        window.location.href = response.redirect_url; // Redirect to the appointment detail page
-                    },
-                    error: function(response) {
-                        // Handle errors
-                        alert('An error occurred: ' + response.responseJSON.error);
-                    }
-                });
+        flatpickr("#id_time", {
+            enableTime: true,
+            noCalendar: true,
+            dateFormat: "H:i",
+            time_24hr: true
+        });
+
+        // Handle form submission with AJAX
+        $('form').on('submit', function(event) {
+            event.preventDefault(); // Prevent default form submission
+
+            $.ajax({
+                url: $(this).attr('action'),
+                type: 'POST',
+                data: $(this).serialize(),
+                success: function(response) {
+                    // Handle success
+                    alert('Appointment booked successfully!');
+                    window.location.href = response.redirect_url; // Redirect to the appointment detail page
+                },
+                error: function(response) {
+                    // Handle errors
+                    alert('An error occurred: ' + response.responseJSON.error);
+                }
             });
         });
+    });
     </script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        h2 {
+            text-align: center;
+            color: #333;
+        }
+        .barber-info {
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .barber-info img {
+            border-radius: 50%;
+            max-width: 150px;
+            height: auto;
+        }
+        .barber-info h3 {
+            margin: 10px 0;
+            font-size: 24px;
+            color: #555;
+        }
+        .barber-info p {
+            margin: 5px 0;
+            font-size: 16px;
+            color: #666;
+        }
+        .appointment-form {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        .appointment-form label {
+            display: block;
+            margin: 10px 0 5px;
+            font-weight: bold;
+            color: #333;
+        }
+        .appointment-form input, .appointment-form select {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .appointment-form button {
+            width: 100%;
+            padding: 10px;
+            background-color: #28a745;
+            border: none;
+            border-radius: 4px;
+            color: #fff;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        .appointment-form button:hover {
+            background-color: #218838;
+        }
+        .flatpickr-calendar {
+            z-index: 9999 !important;
+        }
+    </style>
 </head>
 <body>
-    <h2>Create Appointment</h2>
-    <form method="post" action="{% url 'create_appointment' %}">
-        {% csrf_token %}
-        {{ form.as_p }}
-        <button type="submit">Book Appointment</button>
-    </form>
+    <div class="container">
+        <h2>Book an Appointment</h2>
+
+        {% if barber %}
+            <div class="barber-info">
+                <h3>Book an Appointment with {{ barber.first_name }} {{ barber.last_name }}</h3>
+                {% if barber.profile_picture_url %}
+                    <img src="{{ barber.profile_picture_url }}" alt="Profile Picture">
+                {% endif %}
+                <p><strong>Specialty:</strong> {{ barber.specialty }}</p>
+                <p><strong>Experience:</strong> {{ barber.experience_years }} years</p>
+                <p><strong>Location:</strong> {{ barber.location }}</p>
+            </div>
+        {% else %}
+            <h3>No Barber Selected</h3>
+        {% endif %}
+
+        <form method="post" action="{% url 'create_appointment_with_barber' barber.id %}" class="appointment-form">
+            {% csrf_token %}
+
+            <label for="id_service">Select Service:</label>
+            <select id="id_service" name="service">
+                {% for service in services %}
+                    <option value="{{ service.id }}">{{ service.name }} - {{ service.price }}</option>
+                {% endfor %}
+            </select>
+
+            <label for="id_date">Date:</label>
+            <input type="text" id="id_date" name="date" required>
+
+            <label for="id_time">Time:</label>
+            <input type="text" id="id_time" name="time" required>
+
+            <button type="submit">Book Appointment</button>
+        </form>
+        
+        <div id="map" style="height: 400px; width: 100%; margin-top: 20px;"></div>
+
+        <script>
+            function addInfoWindow(marker, infoWindow, map) {
+                marker.addListener('click', function() {
+                    infoWindow.open(map, marker);
+                });
+            }
+
+            window.initMap = function() {
+                var map = new google.maps.Map(document.getElementById('map'), {
+                    zoom: 13,
+                    center: {lat: {{ latitude }}, lng: {{ longitude }}}
+                });
+
+                var icon = {
+                    url: "{% static 'images/pin_icon.png' %}",
+                    scaledSize: new google.maps.Size(50, 50),
+                    origin: new google.maps.Point(0, 0),
+                    anchor: new google.maps.Point(0, 0)
+                };
+
+                {% for barber in barbers_details %}
+                    var marker = new google.maps.Marker({
+                        position: {lat: {{ barber.latitude }}, lng: {{ barber.longitude }}},
+                        map: map,
+                        icon: icon
+                    });
+
+                    var infoWindow = new google.maps.InfoWindow({
+                        content: '<h3>' + "{{ barber.name }}" + '</h3>' +
+                                 '<p>' + "{{ barber.location }}" + '</p>' +
+                                 '<p><strong>Bio:</strong> ' + "{{ barber.bio|escapejs }}" + '</p>' +
+                                 '<p><strong>Experience:</strong> ' + "{{ barber.experience_years }}" + ' years</p>' +
+                                 '<p><strong>Service Menu:</strong> ' + "{{ barber.service_menu|escapejs }}" + '</p>' +
+                                 ( "{{ barber.profile_picture_url }}" !== 'null' ? '<img src="' + "{{ barber.profile_picture_url }}" + '" alt="Profile Picture" style="width:100px;height:100px;">' : '' ) +
+                                 '<p><a href="{% url 'create_appointment_with_barber' barber.id %}">Book an Appointment</a></p>'
+                    });
+
+                    addInfoWindow(marker, infoWindow, map);
+                {% endfor %}
+            }
+        </script>
+
+        <script async defer
+            src="https://maps.googleapis.com/maps/api/js?key={{ GOOGLE_MAPS_API_KEY }}&callback=initMap">
+        </script>
+    </div>
 </body>
 </html>

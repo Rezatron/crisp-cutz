@@ -6,13 +6,24 @@ from ..models import Barber, Service, Appointment, AppointmentService
 from ..forms import AppointmentForm
 from ..utils import is_barber_available  # Import from utils.py
 
+import logging
+
+logger = logging.getLogger(__name__)
+
+
 @login_required
-def create_appointment(request):
+def create_appointment(request, barber_id=None):
+    barber = None
+    if barber_id:
+        barber = get_object_or_404(Barber, id=barber_id)
+    
     if request.method == 'POST':
         form = AppointmentForm(request.POST)
         if form.is_valid():
             appointment = form.save(commit=False)
             appointment.user = request.user
+            if barber:
+                appointment.barber = barber
             appointment.save()
             
             for service in form.cleaned_data['services']:
@@ -21,7 +32,11 @@ def create_appointment(request):
             return redirect('appointment_detail', appointment.id)
     else:
         form = AppointmentForm()
-    return render(request, 'appointments/create.html', {'form': form})
+    
+    return render(request, 'appointments/create.html', {'form': form, 'barber': barber})
+
+
+
 
 @login_required
 def appointment_list(request):

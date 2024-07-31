@@ -1,5 +1,4 @@
-{% load static %} <!-- Load static tag library -->
-
+{% load static %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -17,15 +16,15 @@
     <a href="{% url 'customer_profile' %}" class="tablinks">Profile</a>
 </div>
 
-<!-- Content for Explore tab goes here -->
 <h3>Explore Content</h3>
 
 <div id="map" style="height: 400px; width: 100%;"></div>
 
 <span>Hello, {{request.user}}</span>
 <span><a href="{% url 'logout_customer' %}">Logout</a></span>
+
 <script>
-// Separate function to add the click event listener
+// Function to add the click event listener
 function addInfoWindow(marker, infoWindow, map) {
     marker.addListener('click', function() {
         infoWindow.open(map, marker);
@@ -40,7 +39,7 @@ window.initMap = function() {
         center: {lat: {{ latitude }}, lng: {{ longitude }}}
     });
 
-        // remove "places" on map (other business pins)
+    // Remove "places" on map (other business pins)
     var noPoi = [
         {
             featureType: "poi",
@@ -51,7 +50,6 @@ window.initMap = function() {
     ];
     map.setOptions({styles: noPoi});
 
-
     // Define the image to be used as marker icon
     var icon = {
         url: "{% static 'images/pin_icon.png' %}", // path to the image file
@@ -60,29 +58,38 @@ window.initMap = function() {
         anchor: new google.maps.Point(0, 0) // anchor point of the image
     };
 
-    // Add a marker and an infoWindow for each barber location
-    {% for barber in barbers_details %}
-        console.log("Adding marker for barber:", {lat: {{ barber.latitude }}, lng: {{ barber.longitude }}});
-        var marker = new google.maps.Marker({
-            position: {lat: {{ barber.latitude }}, lng: {{ barber.longitude }}},
-            map: map,
-            icon: icon // use the custom icon
-        });
+    // Check if there are any barbers to display
+    {% if has_barbers %}
+        // Add a marker and an infoWindow for each barber location
+        {% for barber in barbers_details %}
+            console.log("Adding marker for barber:", {lat: {{ barber.latitude }}, lng: {{ barber.longitude }}});
+            var marker = new google.maps.Marker({
+                position: {lat: {{ barber.latitude }}, lng: {{ barber.longitude }}},
+                map: map,
+                icon: icon // use the custom icon
+            });
 
-        var infoWindow = new google.maps.InfoWindow({
-            content: '<h3>' + "{{ barber.name }}" + '</h3>' +
-                     '<p>' + "{{ barber.location }}" + '</p>' +
-                     '<p><strong>Bio:</strong> ' + "{{ barber.bio|escapejs }}" + '</p>' +
-                     '<p><strong>Experience:</strong> ' + "{{ barber.experience_years }}" + ' years</p>' +
-                     '<p><strong>Service Menu:</strong> ' + "{{ barber.service_menu|escapejs }}" + '</p>' +
-                    ( "{{ barber.profile_picture_url }}" !== 'null' ? '<img src="' + "{{ barber.profile_picture_url }}" + '" alt="Profile Picture" style="width:100px;height:100px;">' : '' )
-        });
+            var infoWindow = new google.maps.InfoWindow({
+                content: '<h3>' + "{{ barber.name }}" + '</h3>' +
+                        '<p>' + "{{ barber.location }}" + '</p>' +
+                        '<p><strong>Bio:</strong> ' + "{{ barber.bio|escapejs }}" + '</p>' +
+                        '<p><strong>Experience:</strong> ' + "{{ barber.experience_years }}" + ' years</p>' +
+                        '<p><strong>Service Menu:</strong> ' + "{{ barber.service_menu|escapejs }}" + '</p>' +
+                        ( "{{ barber.profile_picture_url }}" !== 'null' ? '<img src="' + "{{ barber.profile_picture_url }}" + '" alt="Profile Picture" style="width:100px;height:100px;">' : '' ) +
+                        '<p><a href="{% url 'create_appointment_with_barber' barber.id %}">Book an Appointment</a></p>'
+            });
 
-        // Use a separate function to add the click event listener
-        addInfoWindow(marker, infoWindow, map);
-    {% endfor %}
+            // Use a separate function to add the click event listener
+            addInfoWindow(marker, infoWindow, map);
+        {% endfor %}
+    {% else %}
+        // Handle case where there are no barbers
+        console.log("No barbers found");
+        var noBarbersMessage = document.createElement('p');
+        noBarbersMessage.textContent = 'No barbers are available at the moment.';
+        document.body.appendChild(noBarbersMessage);
+    {% endif %}
 }
-
 </script>
 
 <!-- Include the Google Maps API script -->

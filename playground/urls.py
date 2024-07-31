@@ -1,19 +1,20 @@
+# urls.py
 from django.urls import path
 from .views.common_views import home_page, role_selection_view, logout_user, list_customers
 from .views.customer_views import (
     customer_register, customer_login_view, dashboard, explore, appointments, profile, update_customer
 )
-from .views.barber_views import barber_register, barber_login_view, barber_dashboard, barber_appointments, barber_reports, barber_profile, update_barber, barber_settings, manage_availability, get_availability, set_availability, delete_availability, get_availability_for_date
 from .views.barber_views import (
-    manage_availability, get_availability, set_availability, delete_availability, get_availability_for_date)
-from .views import appointment_views
+    barber_register, barber_login_view, barber_dashboard, barber_appointments, barber_reports, barber_profile, update_barber, barber_settings, manage_availability, get_availability, set_availability, delete_availability, get_availability_for_date
+)
 from .views.appointment_views import create_appointment, appointment_list, appointment_detail
+
 urlpatterns = [
     path('', home_page, name='home'),
     path('register/', role_selection_view, name='role_selection'),
     path('logout/', logout_user, name='logout'),
-    path('logout/barber/', logout_user, name='logout_barber'),  # Specific logout for barbers
-    path('logout/customer/', logout_user, name='logout_customer'),  # Specific logout for customers
+    path('logout/barber/', logout_user, name='logout_barber'),
+    path('logout/customer/', logout_user, name='logout_customer'),
     path('customer/register/', customer_register, name='customer_register'),
     path('customer/login/', customer_login_view, name='customer_login'),
     path('dashboard/', dashboard, name='dashboard'),
@@ -37,12 +38,8 @@ urlpatterns = [
 
     path('customers/', list_customers, name='list_customers'),
 
-    path('appointments/create/', appointment_views.create_appointment, name='create_appointment'),
-    path('appointments/', appointment_views.appointment_list, name='appointment_list'),
-    path('appointments/<int:appointment_id>/', appointment_views.appointment_detail, name='appointment_detail'),
-
-
-    path('appointments/', appointment_views.appointment_list, name='appointment_list'),
-    path('appointments/create/', appointment_views.create_appointment, name='create_appointment'),
-    path('appointments/<int:appointment_id>/', appointment_views.appointment_detail, name='appointment_detail'),
+    path('appointments/create/', create_appointment, name='create_appointment'),
+    path('appointments/create/<int:barber_id>/', create_appointment, name='create_appointment_with_barber'),
+    path('appointments/', appointment_list, name='appointment_list'),
+    path('appointments/<int:appointment_id>/', appointment_detail, name='appointment_detail'),
 ]
