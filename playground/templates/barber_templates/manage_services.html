@@ -1,0 +1,150 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Services</title>
+    <link rel="stylesheet" href="{% static 'styles.css' %}">
+    <style>
+        /* Additional styles for modal and form */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgb(0,0,0);
+            background-color: rgba(0,0,0,0.4);
+            padding-top: 60px;
+        }
+
+        .modal-content {
+            background-color: #fefefe;
+            margin: 5% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+        }
+
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+        }
+
+        .close:hover,
+        .close:focus {
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        .btn-primary {
+            background-color: #007bff;
+            border: none;
+            color: white;
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            border-radius: 4px;
+            margin-top: 10px;
+        }
+
+        .btn-primary:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <div class="tab">
+        <a href="{% url 'barber_dashboard' %}" class="tablinks">Dashboard</a>
+        <a href="{% url 'barber_appointments' %}" class="tablinks">My Appointments</a>
+        <a href="{% url 'barber_reports' %}" class="tablinks">Reports</a>
+        <a href="{% url 'barber_profile' %}" class="tablinks">Profile</a>
+        <a href="{% url 'barber_settings' %}" class="tablinks">Settings</a>
+    </div>
+
+    <h3>Manage Your Services</h3>
+    <span>Hello, {{ request.user }}</span>
+    <span><a href="{% url 'logout_customer' %}">Logout</a></span>
+
+    <div id="manage-services">
+        <button id="manage-services-button" class="btn-primary">Manage Services</button>
+        <button id="create-service-button" class="btn-primary">Create Service</button>
+    </div>
+
+    <!-- Manage Services Modal -->
+    <div id="manage-services-modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <form method="post" action="{% url 'manage_services' %}">
+                {% csrf_token %}
+                {{ formset.management_form.as_p }}
+                {% if formset %}
+                    {% for form in formset %}
+                        <div class="service-form">
+                            {{ form.as_p }}
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <p>No services to manage.</p>
+                {% endif %}
+                
+                <button type="submit" class="btn-primary">Update Services</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Create Service Modal -->
+    <div id="create-service-modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <form method="post" action="{% url 'create_service' %}">
+                {% csrf_token %}
+                {{ service_form.as_p }}
+
+                <button type="submit" class="btn-primary">Create Service</button>
+            </form>
+        </div>
+    </div>
+
+    <script src="{% static 'scripts.js' %}"></script>
+    <script>
+        // JavaScript for modal functionality
+        var manageModal = document.getElementById("manage-services-modal");
+        var createModal = document.getElementById("create-service-modal");
+        var manageBtn = document.getElementById("manage-services-button");
+        var createBtn = document.getElementById("create-service-button");
+        var closeButtons = document.getElementsByClassName("close");
+
+        manageBtn.onclick = function() {
+            manageModal.style.display = "block";
+        }
+
+        createBtn.onclick = function() {
+            createModal.style.display = "block";
+        }
+
+        for (var i = 0; i < closeButtons.length; i++) {
+            closeButtons[i].onclick = function() {
+                manageModal.style.display = "none";
+                createModal.style.display = "none";
+            }
+        }
+
+        window.onclick = function(event) {
+            if (event.target == manageModal) {
+                manageModal.style.display = "none";
+            }
+            if (event.target == createModal) {
+                createModal.style.display = "none";
+            }
+        }
+    </script>
+</body>
+</html>

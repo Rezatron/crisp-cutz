@@ -34,15 +34,18 @@
                 type: 'POST',
                 data: $(this).serialize(),
                 success: function(response) {
-                    // Handle success
                     alert('Appointment booked successfully!');
-                    window.location.href = response.redirect_url; // Redirect to the appointment detail page
+                    if (response.redirect_url) {
+                        window.location.href = response.redirect_url; // Ensure this URL is valid
+                    } else {
+                        console.error('Redirect URL is undefined');
+                    }
                 },
                 error: function(response) {
-                    // Handle errors
                     alert('An error occurred: ' + response.responseJSON.error);
                 }
             });
+
         });
     });
     </script>

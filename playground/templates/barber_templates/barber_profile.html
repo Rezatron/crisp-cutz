@@ -1,5 +1,4 @@
 {% load static %}
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -9,35 +8,72 @@
     <link rel="stylesheet" href="{% static 'styles.css' %}">
 </head>
 <body>
-
-<div class="tab">
-    <a href="{% url 'barber_dashboard' %}" class="tablinks">Dashboard</a>
-    <a href="{% url 'barber_appointments' %}" class="tablinks">My Appointments</a>
-    <a href="{% url 'barber_reports' %}" class="tablinks">Reports</a>
-    <a href="{% url 'barber_profile' %}" class="tablinks">Profile</a>
-    <a href="{% url 'barber_settings' %}" class="tablinks">Settings</a>
-</div>
-
-<h3>Barber Profile Content</h3>
-
-<span>Hello, {{request.user}}</span>
-<span><a href="{% url 'logout_customer' %}">Logout</a></span>
-
-<div id="account-details">
-    <button id="account-details-button">Edit Account Details</button>
-</div>
-
-<div id="account-details-modal" class="modal">
-    <div class="modal-content">
-    <span class="close">&times;</span>
-    <form method="post" action="{% url 'update_barber' %}">
-        {% csrf_token %}
-        {{ form.as_p }}
-        <button type="submit" id="account-details-submit-button">Update information</button>
-    </form>
+    <div class="tab">
+        <a href="{% url 'barber_dashboard' %}" class="tablinks">Dashboard</a>
+        <a href="{% url 'barber_appointments' %}" class="tablinks">My Appointments</a>
+        <a href="{% url 'barber_reports' %}" class="tablinks">Reports</a>
+        <a href="{% url 'barber_profile' %}" class="tablinks">Profile</a>
+        <a href="{% url 'barber_settings' %}" class="tablinks">Settings</a>
     </div>
-</div>
 
-<script src="{% static 'scripts.js' %}"></script>
+    <h3>Barber Profile Content</h3>
+    <span>Hello, {{ request.user }}</span>
+    <span><a href="{% url 'logout_customer' %}">Logout</a></span>
+
+    <div id="account-details">
+        <button id="account-details-button" class="btn">Edit Account Details</button>
+        <button id="manage-services-button" class="btn">Manage Your Services</button>
+    </div>
+
+    <div id="account-details-modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <form method="post" action="{% url 'update_barber' %}" enctype="multipart/form-data">
+                {% csrf_token %}
+                {{ form.as_p }}
+
+                <h4>Manage Your Services</h4>
+                {{ formset.management_form.as_p }}
+                {% if formset %}
+                    {% for form in formset %}
+                        {{ form.as_p }}
+                    {% endfor %}
+                {% else %}
+                    <p>No services to manage.</p>
+                {% endif %}
+                
+                <button type="submit" id="account-details-submit-button" class="btn">Update information</button>
+            </form>
+        </div>
+    </div>
+
+    <script src="{% static 'scripts.js' %}"></script>
+    <script>
+        // JavaScript for modal functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            var modal = document.getElementById("account-details-modal");
+            var btnEdit = document.getElementById("account-details-button");
+            var btnManage = document.getElementById("manage-services-button");
+            var span = document.getElementsByClassName("close")[0];
+
+            btnEdit.onclick = function() {
+                modal.style.display = "block";
+            }
+
+            btnManage.onclick = function() {
+                window.location.href = "{% url 'manage_services' %}";
+            }
+
+            span.onclick = function() {
+                modal.style.display = "none";
+            }
+
+            window.onclick = function(event) {
+                if (event.target == modal) {
+                    modal.style.display = "none";
+                }
+            }
+        });
+    </script>
 </body>
 </html>

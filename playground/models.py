@@ -83,23 +83,44 @@ class Service(models.Model):
     def __str__(self):
         return self.name
 
+class BarberService(models.Model):
+    barber = models.ForeignKey(Barber, on_delete=models.CASCADE)
+    service = models.ForeignKey(Service, on_delete=models.CASCADE)
+    price = models.DecimalField(max_digits=10, decimal_places=2)
+    duration = models.DurationField()
+
+    class Meta:
+        unique_together = ('barber', 'service')
+
+    def __str__(self):
+        return f"{self.barber.username} - {self.service.name}"
+
+class AppointmentService(models.Model):
+    appointment = models.ForeignKey('Appointment', on_delete=models.CASCADE)
+    service = models.ForeignKey(Service, on_delete=models.CASCADE)
+    quantity = models.PositiveIntegerField(default=1)
+
+    def __str__(self):
+        return f"{self.appointment} - {self.service.name}"
+
 class Appointment(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='user_appointments')
     barber = models.ForeignKey(Barber, on_delete=models.CASCADE, related_name='barber_appointments')
     services = models.ManyToManyField(Service, through='AppointmentService')
     date_time = models.DateTimeField()
-    end_time = models.DateTimeField()
+    end_time = models.DateTimeField(blank=True, null=True)  # Allow end_time to be null initially
 
     def __str__(self):
         return f"Appointment with {self.barber} on {self.date_time}"
 
-class AppointmentService(models.Model):
-    appointment = models.ForeignKey(Appointment, on_delete=models.CASCADE)
-    service = models.ForeignKey(Service, on_delete=models.CASCADE)
-    quantity = models.PositiveIntegerField(default=1)  # Quantity of the service
-
-    def __str__(self):
-        return f"{self.quantity} x {self.service.name} for appointment {self.appointment.id}"
+    def save(self, *args, **kwargs):
+        if not self.end_time:
+            total_duration = sum(
+                appointment_service.service.duration * appointment_service.quantity
+                for appointment_service in self.appointmentservice_set.all()
+            )
+            self.end_time = self.date_time + total_duration
+        super().save(*args, **kwargs)
 
 class Review(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='user_reviews')

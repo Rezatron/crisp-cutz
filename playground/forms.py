@@ -2,13 +2,25 @@ import requests
 import json
 from django import forms
 from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
-from .models import Barber, Customer, Availability, Appointment, Service, AppointmentService
+from .models import Barber, Customer, Availability, Appointment, Service, AppointmentService, BarberService
 from django.contrib.auth.models import User
 from django.contrib.auth import authenticate, get_user_model
 from .utils import is_barber_available
 from django.core.exceptions import ValidationError
 from .views.common_views import address_to_coordinates
 from django.conf import settings
+from playground.models import BarberService
+from datetime import timedelta
+from django.forms import modelformset_factory
+
+
+BarberServiceFormSet = modelformset_factory(
+    BarberService,
+    fields=['service', 'price', 'duration'],
+    extra=1,
+    can_delete=True
+)
+
 class BarberRegistrationForm(UserCreationForm):
     email = forms.EmailField(required=True)
     bio = forms.CharField(max_length=500, required=True)
@@ -161,6 +173,7 @@ class BarberUpdateForm(forms.ModelForm):
             return formatted_address
         return location
 
+
 class AppointmentForm(forms.ModelForm):
     class Meta:
         model = Appointment
@@ -202,3 +215,44 @@ class AppointmentForm(forms.ModelForm):
             appointment.save()
             self.save_m2m()  # Save the many-to-many relationship
         return appointment
+    
+
+
+class BarberServiceForm(forms.ModelForm):
+    class Meta:
+        model = BarberService
+        fields = ['service', 'price', 'duration']
+        widgets = {
+            'duration': forms.TextInput(attrs={'type': 'text', 'placeholder': 'Duration in HH:MM:SS'}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Populate the service field with all existing Service instances
+        self.fields['service'].queryset = Service.objects.all()
+    
+    def clean(self):
+        cleaned_data = super().clean()
+        price = cleaned_data.get('price')
+        duration = cleaned_data.get('duration')
+
+        if price is not None and price <= 0:
+            self.add_error('price', 'Price must be greater than 0.')
+
+        if duration:
+            try:
+                duration_obj = timedelta(hours=int(duration.split(':')[0]), minutes=int(duration.split(':')[1]), seconds=int(duration.split(':')[2]))
+                if duration_obj <= timedelta():
+                    self.add_error('duration', 'Duration must be greater than 0.')
+            except (ValueError, IndexError):
+                self.add_error('duration', 'Invalid duration format. Use HH:MM:SS.')
+
+        return cleaned_data
+
+class ServiceForm(forms.ModelForm):
+    class Meta:
+        model = Service
+        fields = ['name', 'price', 'duration']
+        widgets = {
+            'duration': forms.TextInput(attrs={'type': 'text', 'placeholder': 'Duration in HH:MM:SS'}),
+        }

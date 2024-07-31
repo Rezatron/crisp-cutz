@@ -1,15 +1,16 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.contrib.auth import authenticate, login
 from django.http import HttpResponseRedirect, JsonResponse
-from ..forms import BarberRegistrationForm, BarberLoginForm, BarberUpdateForm, AvailabilityForm
-from ..models import Appointment, Barber, Availability
+from ..forms import BarberRegistrationForm, BarberLoginForm, BarberUpdateForm, AvailabilityForm, BarberServiceForm, ServiceForm, Service
+from ..models import Appointment, Barber, Availability, Service, BarberService
 from django.contrib.auth.decorators import login_required
 from django.utils import timezone
 import datetime
 import json  # Import json module for handling JSON data
 from .common_views import address_to_coordinates
 from django.urls import reverse
+from django.forms import modelformset_factory
 
 def barber_register(request):
     if request.method == 'POST':
@@ -222,3 +223,66 @@ def get_availability_for_date(request):
             return JsonResponse({'status': 'error', 'message': f'Invalid date format: {e}'}, status=400)
         except Exception as e:
             return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+
+@login_required
+def barber_services(request, barber_id):
+    barber = get_object_or_404(Barber, id=barber_id)
+    services = barber.services.all()
+    return render(request, 'barbers/services.html', {'barber': barber, 'services': services})
+
+@login_required
+def create_service(request):
+    if request.method == 'POST':
+        service_form = ServiceForm(request.POST)
+        
+        if service_form.is_valid():
+            service_form.save()
+            messages.success(request, 'Service created successfully!')
+            return redirect('manage_services')
+    else:
+        service_form = ServiceForm()
+    
+    return render(request, 'barber_templates/create_service.html', {
+        'service_form': service_form
+    })
+
+
+
+@login_required
+def manage_services(request):
+    barber = request.user.barber
+    
+    BarberServiceFormSet = modelformset_factory(
+        BarberService,
+        form=BarberServiceForm,
+        extra=1,
+        can_delete=True
+    )
+    
+    if request.method == 'POST':
+        formset = BarberServiceFormSet(request.POST)
+        
+        if formset.is_valid():
+            # Process the formset
+            for form in formset:
+                if form.cleaned_data.get('DELETE'):
+                    if form.instance.pk:
+                        form.instance.delete()
+                else:
+                    # Save new or updated service
+                    service = form.save(commit=False)
+                    service.barber = barber
+                    service.save()
+            
+            messages.success(request, 'Services updated successfully!')
+            return redirect('manage_services')
+    else:
+        # Initialize formset with existing services
+        existing_services = barber.barberservice_set.all()
+        formset = BarberServiceFormSet(queryset=existing_services)
+    
+    return render(request, 'barber_templates/manage_services.html', {
+        'formset': formset,
+        'service_form': ServiceForm()  # Pass a blank service form for the create service modal
+    })
+
