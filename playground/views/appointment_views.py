@@ -10,7 +10,6 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-
 @login_required
 def create_appointment(request, barber_id=None):
     barber = None

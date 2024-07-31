@@ -173,8 +173,12 @@ class BarberUpdateForm(forms.ModelForm):
             return formatted_address
         return location
 
-
 class AppointmentForm(forms.ModelForm):
+    services = forms.ModelMultipleChoiceField(
+        queryset=Service.objects.none(),  # Initially no services
+        widget=forms.CheckboxSelectMultiple
+    )
+
     class Meta:
         model = Appointment
         fields = ['barber', 'services', 'date_time']
@@ -183,9 +187,16 @@ class AppointmentForm(forms.ModelForm):
         }
 
     def __init__(self, *args, **kwargs):
+        # Get the initial data for barber (if provided) from kwargs
+        initial_barber_id = kwargs.get('initial', {}).get('barber')
         super().__init__(*args, **kwargs)
+
+        # Set the queryset for the barber field
         self.fields['barber'].queryset = Barber.objects.filter(is_available=True)
-        self.fields['services'].queryset = Service.objects.all()
+
+        # Update services queryset if barber is provided in the form data
+        if initial_barber_id:
+            self.fields['services'].queryset = Service.objects.filter(barberservice__barber_id=initial_barber_id).distinct()
 
     def clean(self):
         cleaned_data = super().clean()
@@ -213,9 +224,9 @@ class AppointmentForm(forms.ModelForm):
         
         if commit:
             appointment.save()
-            self.save_m2m()  # Save the many-to-many relationship
+            for service in self.cleaned_data['services']:
+                AppointmentService.objects.create(appointment=appointment, service=service)
         return appointment
-    
 
 
 class BarberServiceForm(forms.ModelForm):

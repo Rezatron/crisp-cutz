@@ -79,9 +79,11 @@ class Service(models.Model):
     name = models.CharField(max_length=100)
     duration = models.DurationField()  # Duration of the service
     price = models.DecimalField(max_digits=10, decimal_places=2)
-    
+
     def __str__(self):
         return self.name
+
+
 
 class BarberService(models.Model):
     barber = models.ForeignKey(Barber, on_delete=models.CASCADE)

@@ -25,6 +25,35 @@
             time_24hr: true
         });
 
+        // Fetch services for the selected barber
+        function fetchServices(barberId) {
+            $.ajax({
+                url: "{% url 'get_services_by_barber' %}",
+                data: {
+                    barber_id: barberId
+                },
+                success: function(data) {
+                    var serviceSelect = $('#id_service');
+                    serviceSelect.empty(); // Clear current options
+                    $.each(data, function(index, service) {
+                        serviceSelect.append($('<option>', {
+                            value: service.id,
+                            text: service.name + ' - ' + service.price
+                        }));
+                    });
+                },
+                error: function() {
+                    alert('Failed to load services.');
+                }
+            });
+        }
+
+        // Automatically fetch services when page loads if barber is selected
+        var barberId = '{{ barber.id }}';
+        if (barberId) {
+            fetchServices(barberId);
+        }
+
         // Handle form submission with AJAX
         $('form').on('submit', function(event) {
             event.preventDefault(); // Prevent default form submission
@@ -144,10 +173,8 @@
             {% csrf_token %}
 
             <label for="id_service">Select Service:</label>
-            <select id="id_service" name="service">
-                {% for service in services %}
-                    <option value="{{ service.id }}">{{ service.name }} - {{ service.price }}</option>
-                {% endfor %}
+            <select id="id_service" name="service" required>
+                <!-- Options will be populated by JavaScript -->
             </select>
 
             <label for="id_date">Date:</label>

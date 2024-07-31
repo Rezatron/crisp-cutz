@@ -7,6 +7,7 @@ from .views.customer_views import (
 from .views.barber_views import (
     barber_register, barber_login_view, barber_dashboard, barber_appointments, barber_reports, barber_profile, update_barber, barber_settings, manage_availability, get_availability, set_availability, delete_availability, get_availability_for_date, manage_services, create_service)
 from .views.appointment_views import create_appointment, appointment_list, appointment_detail
+from .views.services_views import get_services_by_barber
 
 urlpatterns = [
     path('', home_page, name='home'),
@@ -44,4 +45,8 @@ urlpatterns = [
     path('appointments/create/<int:barber_id>/', create_appointment, name='create_appointment_with_barber'),
     path('appointments/', appointment_list, name='appointment_list'),
     path('appointments/<int:appointment_id>/', appointment_detail, name='appointment_detail'),
+
+    path('get-services-by-barber/', get_services_by_barber, name='get_services_by_barber'),
+
+
 ]

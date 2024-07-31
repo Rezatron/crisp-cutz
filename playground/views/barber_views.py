@@ -236,7 +236,21 @@ def create_service(request):
         service_form = ServiceForm(request.POST)
         
         if service_form.is_valid():
-            service_form.save()
+            # Save the new service
+            service = service_form.save()
+            
+            # Create a BarberService entry for the current barber only
+            barber = request.user.barber
+            
+            # Check if BarberService entry already exists for this barber and service
+            if not BarberService.objects.filter(barber=barber, service=service).exists():
+                BarberService.objects.create(
+                    barber=barber,
+                    service=service,
+                    price=service.price,  # Use the price from the Service
+                    duration=service.duration  # Use the duration from the Service
+                )
+            
             messages.success(request, 'Service created successfully!')
             return redirect('manage_services')
     else:
@@ -245,8 +259,6 @@ def create_service(request):
     return render(request, 'barber_templates/create_service.html', {
         'service_form': service_form
     })
-
-
 
 @login_required
 def manage_services(request):
@@ -285,4 +297,3 @@ def manage_services(request):
         'formset': formset,
         'service_form': ServiceForm()  # Pass a blank service form for the create service modal
     })
-
