@@ -184,26 +184,21 @@ class AppointmentForm(forms.ModelForm):
             return cleaned_data
 
         # Calculate end_time based on services
-        total_duration = sum(service.duration * AppointmentService.objects.get(service=service).quantity for service in services)
+        total_duration = sum(service.duration for service in services)
         end_time = date_time + total_duration
 
         # Check barber availability
         if not is_barber_available(barber, date_time, end_time):
             self.add_error(None, 'The barber is not available at this time.')
 
+        cleaned_data['end_time'] = end_time
         return cleaned_data
 
     def save(self, commit=True):
         appointment = super().save(commit=False)
-        services = self.cleaned_data['services']
-        appointment.end_time = self.cleaned_data['date_time'] + sum(service.duration * AppointmentService.objects.get(service=service).quantity for service in services)
+        appointment.end_time = self.cleaned_data['end_time']
         
         if commit:
             appointment.save()
-            for service in services:
-                AppointmentService.objects.create(
-                    appointment=appointment,
-                    service=service,
-                    quantity=AppointmentService.objects.get(service=service).quantity
-                )
+            self.save_m2m()  # Save the many-to-many relationship
         return appointment

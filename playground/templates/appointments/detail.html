@@ -1,0 +1,13 @@
+{% extends "base_generic.html" %}
+
+{% block content %}
+  <h2>Appointment Details</h2>
+  <p>Barber: {{ appointment.barber }}</p>
+  <p>Date and Time: {{ appointment.date_time }}</p>
+  <p>Services:</p>
+  <ul>
+    {% for appointment_service in appointment_services %}
+      <li>{{ appointment_service.service.name }} ({{ appointment_service.quantity }})</li>
+    {% endfor %}
+  </ul>
+{% endblock %}

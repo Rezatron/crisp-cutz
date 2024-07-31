@@ -1,11 +1,9 @@
 # utils.py
-from .models import Appointment
+from .models import Appointment, Availability
 
 def is_barber_available(barber, start_time, end_time):
-    availabilities = barber.availabilities.filter(
-        start_time__lte=start_time, end_time__gte=end_time, is_available=True
-    )
-    overlapping_appointments = Appointment.objects.filter(
-        barber=barber, date_time__lt=end_time, end_time__gt=start_time
-    )
-    return availabilities.exists() and not overlapping_appointments.exists()
+    availabilities = Availability.objects.filter(barber=barber, is_available=True)
+    for availability in availabilities:
+        if availability.start_time <= start_time < availability.end_time and availability.start_time < end_time <= availability.end_time:
+            return True
+    return False
