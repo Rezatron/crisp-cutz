@@ -4,8 +4,7 @@ from django.contrib.auth.decorators import login_required
 from django.utils import timezone
 from ..models import Barber, Service, Appointment, AppointmentService
 from ..forms import AppointmentForm
-from ..utils import is_barber_available  # Import from utils.py
-
+from ..utils import is_barber_available
 import logging
 
 logger = logging.getLogger(__name__)
@@ -25,15 +24,27 @@ def create_appointment(request, barber_id=None):
                 appointment.barber = barber
             appointment.save()
             
+            logger.info(f"Appointment created: {appointment}")
+            
+            # Clear previous services if any
+            AppointmentService.objects.filter(appointment=appointment).delete()
+            
+            # Add new services
             for service in form.cleaned_data['services']:
-                AppointmentService.objects.create(appointment=appointment, service=service)
+                AppointmentService.objects.create(
+                    appointment=appointment,
+                    service=service,
+                    quantity=1  # Adjust if you have a quantity field in your form
+                )
             
             return redirect('appointment_detail', appointment.id)
+        else:
+            logger.debug(f"Form errors: {form.errors}")
     else:
-        form = AppointmentForm()
+        initial_data = {'barber': barber.id} if barber else {}
+        form = AppointmentForm(initial=initial_data)
     
     return render(request, 'appointments/create.html', {'form': form, 'barber': barber})
-
 
 
 

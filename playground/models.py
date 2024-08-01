@@ -99,7 +99,7 @@ class BarberService(models.Model):
 
 class AppointmentService(models.Model):
     appointment = models.ForeignKey('Appointment', on_delete=models.CASCADE)
-    service = models.ForeignKey(Service, on_delete=models.CASCADE)
+    service = models.ForeignKey('Service', on_delete=models.CASCADE)
     quantity = models.PositiveIntegerField(default=1)
 
     def __str__(self):
@@ -107,10 +107,10 @@ class AppointmentService(models.Model):
 
 class Appointment(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='user_appointments')
-    barber = models.ForeignKey(Barber, on_delete=models.CASCADE, related_name='barber_appointments')
-    services = models.ManyToManyField(Service, through='AppointmentService')
+    barber = models.ForeignKey('Barber', on_delete=models.CASCADE, related_name='barber_appointments')
+    services = models.ManyToManyField('Service', through='AppointmentService')
     date_time = models.DateTimeField()
-    end_time = models.DateTimeField(blank=True, null=True)  # Allow end_time to be null initially
+    end_time = models.DateTimeField(blank=True, null=True)
 
     def __str__(self):
         return f"Appointment with {self.barber} on {self.date_time}"
@@ -123,6 +123,7 @@ class Appointment(models.Model):
             )
             self.end_time = self.date_time + total_duration
         super().save(*args, **kwargs)
+
 
 class Review(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='user_reviews')

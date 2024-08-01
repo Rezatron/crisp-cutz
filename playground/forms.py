@@ -173,9 +173,10 @@ class BarberUpdateForm(forms.ModelForm):
             return formatted_address
         return location
 
+
 class AppointmentForm(forms.ModelForm):
     services = forms.ModelMultipleChoiceField(
-        queryset=Service.objects.none(),  # Initially no services
+        queryset=Service.objects.none(),
         widget=forms.CheckboxSelectMultiple
     )
 
@@ -187,14 +188,11 @@ class AppointmentForm(forms.ModelForm):
         }
 
     def __init__(self, *args, **kwargs):
-        # Get the initial data for barber (if provided) from kwargs
         initial_barber_id = kwargs.get('initial', {}).get('barber')
         super().__init__(*args, **kwargs)
 
-        # Set the queryset for the barber field
         self.fields['barber'].queryset = Barber.objects.filter(is_available=True)
 
-        # Update services queryset if barber is provided in the form data
         if initial_barber_id:
             self.fields['services'].queryset = Service.objects.filter(barberservice__barber_id=initial_barber_id).distinct()
 
@@ -207,11 +205,9 @@ class AppointmentForm(forms.ModelForm):
         if not barber or not services or not date_time:
             return cleaned_data
 
-        # Calculate end_time based on services
         total_duration = sum(service.duration for service in services)
         end_time = date_time + total_duration
 
-        # Check barber availability
         if not is_barber_available(barber, date_time, end_time):
             self.add_error(None, 'The barber is not available at this time.')
 
@@ -224,10 +220,12 @@ class AppointmentForm(forms.ModelForm):
         
         if commit:
             appointment.save()
+            # Clear previous services if any
+            AppointmentService.objects.filter(appointment=appointment).delete()
+            # Add new services
             for service in self.cleaned_data['services']:
-                AppointmentService.objects.create(appointment=appointment, service=service)
+                AppointmentService.objects.create(appointment=appointment, service=service, quantity=1)
         return appointment
-
 
 class BarberServiceForm(forms.ModelForm):
     class Meta:
