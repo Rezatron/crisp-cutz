@@ -116,12 +116,14 @@ class Appointment(models.Model):
         return f"Appointment with {self.barber} on {self.date_time}"
 
     def save(self, *args, **kwargs):
+        print(f"Saving appointment: {self}")  # Debugging line
         if not self.end_time:
             total_duration = sum(
                 appointment_service.service.duration * appointment_service.quantity
                 for appointment_service in self.appointmentservice_set.all()
             )
-            self.end_time = self.date_time + total_duration
+            self.end_time = self.date_time + timedelta(minutes=total_duration)
+            print(f"Calculated end time: {self.end_time}")  # Debugging line
         super().save(*args, **kwargs)
 
 

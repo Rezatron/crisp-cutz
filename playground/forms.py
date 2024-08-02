@@ -173,11 +173,11 @@ class BarberUpdateForm(forms.ModelForm):
             return formatted_address
         return location
 
-
 class AppointmentForm(forms.ModelForm):
     services = forms.ModelMultipleChoiceField(
-        queryset=Service.objects.none(),
-        widget=forms.CheckboxSelectMultiple
+        queryset=Service.objects.none(),  # Default to none to be populated later
+        widget=forms.CheckboxSelectMultiple,
+        required=True
     )
 
     class Meta:
@@ -191,41 +191,18 @@ class AppointmentForm(forms.ModelForm):
         initial_barber_id = kwargs.get('initial', {}).get('barber')
         super().__init__(*args, **kwargs)
 
+        # Set queryset for barber field
         self.fields['barber'].queryset = Barber.objects.filter(is_available=True)
 
+        # Set queryset for services field based on initial barber
         if initial_barber_id:
-            self.fields['services'].queryset = Service.objects.filter(barberservice__barber_id=initial_barber_id).distinct()
-
-    def clean(self):
-        cleaned_data = super().clean()
-        barber = cleaned_data.get('barber')
-        services = cleaned_data.get('services')
-        date_time = cleaned_data.get('date_time')
-
-        if not barber or not services or not date_time:
-            return cleaned_data
-
-        total_duration = sum(service.duration for service in services)
-        end_time = date_time + total_duration
-
-        if not is_barber_available(barber, date_time, end_time):
-            self.add_error(None, 'The barber is not available at this time.')
-
-        cleaned_data['end_time'] = end_time
-        return cleaned_data
-
-    def save(self, commit=True):
-        appointment = super().save(commit=False)
-        appointment.end_time = self.cleaned_data['end_time']
-        
-        if commit:
-            appointment.save()
-            # Clear previous services if any
-            AppointmentService.objects.filter(appointment=appointment).delete()
-            # Add new services
-            for service in self.cleaned_data['services']:
-                AppointmentService.objects.create(appointment=appointment, service=service, quantity=1)
-        return appointment
+            self.fields['services'].queryset = Service.objects.filter(
+                barberservice__barber_id=initial_barber_id
+            ).distinct()
+        elif self.instance and self.instance.pk and hasattr(self.instance, 'barber'):
+            self.fields['services'].queryset = Service.objects.filter(
+                barberservice__barber_id=self.instance.barber.id
+            ).distinct()
 
 class BarberServiceForm(forms.ModelForm):
     class Meta:

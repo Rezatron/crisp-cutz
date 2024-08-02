@@ -1,50 +1,44 @@
-# appointment_views.py
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
-from django.utils import timezone
+from django.utils.decorators import method_decorator
+from django.urls import reverse
+from django.http import JsonResponse
 from ..models import Barber, Service, Appointment, AppointmentService
 from ..forms import AppointmentForm
-from ..utils import is_barber_available
 import logging
 
 logger = logging.getLogger(__name__)
 
-@login_required
 def create_appointment(request, barber_id=None):
     barber = None
     if barber_id:
         barber = get_object_or_404(Barber, id=barber_id)
-    
+
     if request.method == 'POST':
+        print(f"POST data: {request.POST}")  # Debugging line
         form = AppointmentForm(request.POST)
         if form.is_valid():
+            print("Form is valid.")  # Debugging line
             appointment = form.save(commit=False)
             appointment.user = request.user
             if barber:
                 appointment.barber = barber
             appointment.save()
-            
-            logger.info(f"Appointment created: {appointment}")
-            
-            # Clear previous services if any
-            AppointmentService.objects.filter(appointment=appointment).delete()
-            
-            # Add new services
-            for service in form.cleaned_data['services']:
-                AppointmentService.objects.create(
-                    appointment=appointment,
-                    service=service,
-                    quantity=1  # Adjust if you have a quantity field in your form
-                )
-            
-            return redirect('appointment_detail', appointment.id)
+            form.save_m2m()
+            print("Appointment saved successfully.")  # Debugging line
+            return JsonResponse({'message': 'Appointment created successfully!', 'redirect_url': reverse('appointments_list')})
         else:
-            logger.debug(f"Form errors: {form.errors}")
+            errors = form.errors.as_json()
+            print(f"Form errors: {errors}")  # Debugging line
+            return JsonResponse({'errors': errors}, status=400)
     else:
-        initial_data = {'barber': barber.id} if barber else {}
+        initial_data = {'barber': barber_id} if barber else {}
+        print(f"Initial data for form: {initial_data}")  # Debugging line
         form = AppointmentForm(initial=initial_data)
     
     return render(request, 'appointments/create.html', {'form': form, 'barber': barber})
+
+
 
 
 

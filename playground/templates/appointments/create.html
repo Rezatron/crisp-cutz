@@ -11,21 +11,12 @@
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script>
     $(document).ready(function() {
-        // Initialize Flatpickr for date and time selection
-        flatpickr("#id_date", {
-            minDate: "today",
-            dateFormat: "Y-m-d",
-            locale: "en"
-        });
-
-        flatpickr("#id_time", {
+        flatpickr("#id_date_time", {
             enableTime: true,
-            noCalendar: true,
-            dateFormat: "H:i",
-            time_24hr: true
+            dateFormat: "Y-m-d\\TH:i",
+            minDate: "today",
         });
 
-        // Fetch services for the specific barber
         function fetchServices(barberId) {
             $.ajax({
                 url: "{% url 'get_services_by_barber' %}",
@@ -33,8 +24,8 @@
                     barber_id: barberId
                 },
                 success: function(data) {
-                    var serviceSelect = $('#id_service');
-                    serviceSelect.empty(); // Clear current options
+                    var serviceSelect = $('#id_services');
+                    serviceSelect.empty();
                     $.each(data, function(index, service) {
                         serviceSelect.append($('<option>', {
                             value: service.id,
@@ -48,33 +39,41 @@
             });
         }
 
-        // Fetch services for the pre-selected barber
         var barberId = '{{ barber.id }}';
         if (barberId) {
             fetchServices(barberId);
         }
 
-        // Handle form submission with AJAX
         $('form').on('submit', function(event) {
-            event.preventDefault(); // Prevent default form submission
+            event.preventDefault();
+
+            var formData = $(this).serialize();
+            console.log('Form Data:', formData);
 
             $.ajax({
                 url: $(this).attr('action'),
                 type: 'POST',
-                data: $(this).serialize(),
+                data: formData,
                 success: function(response) {
                     alert('Appointment booked successfully!');
                     if (response.redirect_url) {
-                        window.location.href = response.redirect_url; // Ensure this URL is valid
+                        window.location.href = response.redirect_url;
                     } else {
                         console.error('Redirect URL is undefined');
                     }
                 },
                 error: function(response) {
-                    alert('An error occurred: ' + response.responseJSON.error);
+                    console.log('Error response:', response); // Log the entire response for debugging
+                    var errors = response.responseJSON.errors;
+                    var errorMsg = '';
+                    for (var field in errors) {
+                        if (errors.hasOwnProperty(field)) {
+                            errorMsg += field + ': ' + errors[field][0].message + '\n'; // Adjusted to get error message
+                        }
+                    }
+                    alert('An error occurred:\n' + errorMsg);
                 }
             });
-
         });
     });
     </script>
@@ -158,10 +157,10 @@
         {% if barber %}
             <div class="barber-info">
                 <h3>Book an Appointment with {{ barber.first_name }} {{ barber.last_name }}</h3>
-                {% if barber.profile_picture_url %}
-                    <img src="{{ barber.profile_picture_url }}" alt="Profile Picture">
+                {% if barber.profile_picture %}
+                    <img src="{{ barber.profile_picture.url }}" alt="Profile Picture">
                 {% endif %}
-                <p><strong>Specialty:</strong> {{ barber.specialty }}</p>
+                <p><strong>Specialty:</strong> {{ barber.specialization }}</p>
                 <p><strong>Experience:</strong> {{ barber.experience_years }} years</p>
                 <p><strong>Location:</strong> {{ barber.location }}</p>
             </div>
@@ -171,68 +170,19 @@
 
         <form method="post" action="{% url 'create_appointment_with_barber' barber.id %}" class="appointment-form">
             {% csrf_token %}
+            
+            <input type="hidden" name="barber" value="{{ barber.id }}">
 
-            <label for="id_service">Select Service:</label>
-            <select id="id_service" name="service" required>
+            <label for="id_services">Select Services:</label>
+            <select id="id_services" name="services" multiple required>
                 <!-- Options will be populated by JavaScript -->
             </select>
 
-            <label for="id_date">Date:</label>
-            <input type="text" id="id_date" name="date" required>
-
-            <label for="id_time">Time:</label>
-            <input type="text" id="id_time" name="time" required>
+            <label for="id_date_time">Date and Time:</label>
+            <input type="text" id="id_date_time" name="date_time" required>
 
             <button type="submit">Book Appointment</button>
         </form>
-        
-        <div id="map" style="height: 400px; width: 100%; margin-top: 20px;"></div>
-
-        <script>
-            function addInfoWindow(marker, infoWindow, map) {
-                marker.addListener('click', function() {
-                    infoWindow.open(map, marker);
-                });
-            }
-
-            window.initMap = function() {
-                var map = new google.maps.Map(document.getElementById('map'), {
-                    zoom: 13,
-                    center: {lat: {{ latitude }}, lng: {{ longitude }}}
-                });
-
-                var icon = {
-                    url: "{% static 'images/pin_icon.png' %}",
-                    scaledSize: new google.maps.Size(50, 50),
-                    origin: new google.maps.Point(0, 0),
-                    anchor: new google.maps.Point(0, 0)
-                };
-
-                {% for barber in barbers_details %}
-                    var marker = new google.maps.Marker({
-                        position: {lat: {{ barber.latitude }}, lng: {{ barber.longitude }}},
-                        map: map,
-                        icon: icon
-                    });
-
-                    var infoWindow = new google.maps.InfoWindow({
-                        content: '<h3>' + "{{ barber.name }}" + '</h3>' +
-                                 '<p>' + "{{ barber.location }}" + '</p>' +
-                                 '<p><strong>Bio:</strong> ' + "{{ barber.bio|escapejs }}" + '</p>' +
-                                 '<p><strong>Experience:</strong> ' + "{{ barber.experience_years }}" + ' years</p>' +
-                                 '<p><strong>Service Menu:</strong> ' + "{{ barber.service_menu|escapejs }}" + '</p>' +
-                                 ( "{{ barber.profile_picture_url }}" !== 'null' ? '<img src="' + "{{ barber.profile_picture_url }}" + '" alt="Profile Picture" style="width:100px;height:100px;">' : '' ) +
-                                 '<p><a href="{% url 'create_appointment_with_barber' barber.id %}">Book an Appointment</a></p>'
-                    });
-
-                    addInfoWindow(marker, infoWindow, map);
-                {% endfor %}
-            }
-        </script>
-
-        <script async defer
-            src="https://maps.googleapis.com/maps/api/js?key={{ GOOGLE_MAPS_API_KEY }}&callback=initMap">
-        </script>
     </div>
 </body>
 </html>
