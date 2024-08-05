@@ -1,0 +1,13 @@
+issue
+
+-----cant create appointment-----
+
+
+Appointment(model) was not recognising barber+service values -- "choices not valid" or "not being recognised"
+
+queryset was not being updated correctly
+form was valid but still violated database constraint- user was null when it shouldnt have
+
+solution:
+1. queryset for barber and services based on barber_id
+2. SAVE appoitnment instance before calculating end_time (end_time had to be dynamic as its start_time + duration of service)

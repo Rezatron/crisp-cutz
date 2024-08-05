@@ -9,34 +9,38 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-def create_appointment(request, barber_id=None):
-    barber = None
-    if barber_id:
-        barber = get_object_or_404(Barber, id=barber_id)
 
-    if request.method == 'POST':
-        print(f"POST data: {request.POST}")  # Debugging line
-        form = AppointmentForm(request.POST)
-        if form.is_valid():
-            print("Form is valid.")  # Debugging line
-            appointment = form.save(commit=False)
-            appointment.user = request.user
-            if barber:
-                appointment.barber = barber
-            appointment.save()
-            form.save_m2m()
-            print("Appointment saved successfully.")  # Debugging line
-            return JsonResponse({'message': 'Appointment created successfully!', 'redirect_url': reverse('appointments_list')})
-        else:
-            errors = form.errors.as_json()
-            print(f"Form errors: {errors}")  # Debugging line
-            return JsonResponse({'errors': errors}, status=400)
-    else:
-        initial_data = {'barber': barber_id} if barber else {}
-        print(f"Initial data for form: {initial_data}")  # Debugging line
-        form = AppointmentForm(initial=initial_data)
+@login_required
+def create_appointment(request, barber_id=None):
+    barber = get_object_or_404(Barber, id=barber_id) if barber_id else None
+    print(f"Found Barber with ID: {barber_id}")
+    print("Request Method:", request.method)
     
-    return render(request, 'appointments/create.html', {'form': form, 'barber': barber})
+    if request.method == 'POST':
+        form = AppointmentForm(request.POST, initial={'barber': barber_id})
+        print("Request Data:", request.POST)
+        print("Form valid:", form.is_valid())
+        print("Form errors:", form.errors)
+        
+        if form.is_valid():
+            appointment = form.save(commit=False)  # Create the appointment instance
+            appointment.user = request.user  # Set the user here
+            appointment.save()  # Save the instance first to get an ID
+            form.save_m2m()     # Save many-to-many relationships
+            return JsonResponse({'message': 'Appointment created successfully.'}, status=201)
+        else:
+            return JsonResponse({'errors': form.errors}, status=400)
+    else:
+        form = AppointmentForm(initial={'barber': barber_id})
+        available_services = barber.services.all() if barber else []
+        print("Available Barbers in form:", Barber.objects.all())
+        print(f"Available Services for Barber {barber_id}:", available_services)
+
+        return render(request, 'appointments/create.html', {
+            'form': form,
+            'barber': barber,
+            'available_services': available_services,
+        })
 
 
 

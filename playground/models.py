@@ -47,6 +47,7 @@ class Barber(CustomUser):
     latitude = models.FloatField(null=True, blank=True)
     longitude = models.FloatField(null=True, blank=True)
     specialization = models.CharField(max_length=100, default='General')
+    services = models.ManyToManyField('Service', related_name='barbers')
 
     class Meta:
         ordering = ['id', 'username', 'email', 'first_name', 'last_name', 'bio', 'experience_years', 'is_available', 'service_menu', 'booking_preferences', 'location', 'specialization',]
@@ -116,15 +117,20 @@ class Appointment(models.Model):
         return f"Appointment with {self.barber} on {self.date_time}"
 
     def save(self, *args, **kwargs):
-        print(f"Saving appointment: {self}")  # Debugging line
-        if not self.end_time:
+        # Save the instance first
+        if self.pk is None:  # Only calculate end_time if this is a new instance
+            super().save(*args, **kwargs)  # Save the instance to get an ID
+
+            # Now calculate end_time using the saved instance
             total_duration = sum(
-                appointment_service.service.duration * appointment_service.quantity
-                for appointment_service in self.appointmentservice_set.all()
+                barberservice.duration for barberservice in BarberService.objects.filter(barber=self.barber, service__in=self.services.all())
             )
             self.end_time = self.date_time + timedelta(minutes=total_duration)
             print(f"Calculated end time: {self.end_time}")  # Debugging line
-        super().save(*args, **kwargs)
+            super().save(*args, **kwargs)  # Save again to update end_time
+        else:
+            super().save(*args, **kwargs)  # Save if updating existing instance
+
 
 
 class Review(models.Model):
