@@ -9,74 +9,6 @@
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
-    <script>
-    $(document).ready(function() {
-        flatpickr("#id_date_time", {
-            enableTime: true,
-            dateFormat: "Y-m-d\\TH:i",
-            minDate: "today",
-        });
-
-        function fetchServices(barberId) {
-            $.ajax({
-                url: "{% url 'get_services_by_barber' %}",
-                data: {
-                    barber_id: barberId
-                },
-                success: function(data) {
-                    var serviceSelect = $('#id_services');
-                    serviceSelect.empty();
-                    $.each(data, function(index, service) {
-                        serviceSelect.append($('<option>', {
-                            value: service.id,
-                            text: service.name + ' - ' + service.price
-                        }));
-                    });
-                },
-                error: function() {
-                    alert('Failed to load services.');
-                }
-            });
-        }
-
-        var barberId = '{{ barber.id }}';
-        if (barberId) {
-            fetchServices(barberId);
-        }
-
-        $('form').on('submit', function(event) {
-            event.preventDefault();
-
-            var formData = $(this).serialize();
-            console.log('Form Data:', formData);
-
-            $.ajax({
-                url: $(this).attr('action'),
-                type: 'POST',
-                data: formData,
-                success: function(response) {
-                    alert('Appointment booked successfully!');
-                    if (response.redirect_url) {
-                        window.location.href = response.redirect_url;
-                    } else {
-                        console.error('Redirect URL is undefined');
-                    }
-                },
-                error: function(response) {
-                    console.log('Error response:', response); // Log the entire response for debugging
-                    var errors = response.responseJSON.errors;
-                    var errorMsg = '';
-                    for (var field in errors) {
-                        if (errors.hasOwnProperty(field)) {
-                            errorMsg += field + ': ' + errors[field][0].message + '\n'; // Adjusted to get error message
-                        }
-                    }
-                    alert('An error occurred:\n' + errorMsg);
-                }
-            });
-        });
-    });
-    </script>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -125,7 +57,7 @@
             font-weight: bold;
             color: #333;
         }
-        .appointment-form input, .appointment-form select, .appointment-form textarea {
+        .appointment-form input, .appointment-form select {
             width: 100%;
             padding: 8px;
             margin-bottom: 10px;
@@ -181,8 +113,47 @@
             <label for="id_date_time">Date and Time:</label>
             <input type="text" id="id_date_time" name="date_time" required>
 
+            <input type="hidden" id="id_location" name="location" value="{{ barber.location }}">
+
             <button type="submit">Book Appointment</button>
         </form>
     </div>
+
+    <script>
+    $(document).ready(function() {
+        flatpickr("#id_date_time", {
+            enableTime: true,
+            dateFormat: "Y-m-d\\TH:i",
+            minDate: "today",
+        });
+
+        function fetchServices(barberId) {
+            $.ajax({
+                url: "{% url 'get_services_by_barber' %}",
+                data: {
+                    barber_id: barberId
+                },
+                success: function(data) {
+                    var serviceSelect = $('#id_services');
+                    serviceSelect.empty();
+                    $.each(data, function(index, service) {
+                        serviceSelect.append($('<option>', {
+                            value: service.id,
+                            text: `${service.name} - ${service.price} - ${service.duration}`
+                        }));
+                    });
+                },
+                error: function() {
+                    alert('Failed to load services.');
+                }
+            });
+        }
+
+        var barberId = '{{ barber.id }}';
+        if (barberId) {
+            fetchServices(barberId);
+        }
+    });
+    </script>
 </body>
 </html>
