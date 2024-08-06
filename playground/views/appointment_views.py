@@ -3,12 +3,12 @@ from django.contrib.auth.decorators import login_required
 from django.utils.decorators import method_decorator
 from django.urls import reverse
 from django.http import JsonResponse
-from ..models import Barber, Service, Appointment, AppointmentService
+from ..models import Barber, Service, Appointment, AppointmentService, BarberService
 from ..forms import AppointmentForm
 import logging
+from datetime import timedelta 
 
-logger = logging.getLogger(__name__)
-
+logger = logging.getLogger('playground')
 
 @login_required
 def create_appointment(request, barber_id=None):
@@ -20,10 +20,32 @@ def create_appointment(request, barber_id=None):
         if form.is_valid():
             appointment = form.save(commit=False)
             appointment.user = request.user
-            appointment.save()
-            form.save_m2m()
 
-            # Redirect to the confirmation page
+            # Get the selected service IDs from the form
+            selected_service_ids = form.cleaned_data['services']
+            barber_services = BarberService.objects.filter(barber=appointment.barber, service__in=selected_service_ids)
+            
+            logger.debug(f"Creating appointment with barber ID: {appointment.barber.id}")
+            logger.debug(f"Selected Service IDs: {selected_service_ids}")
+
+            # Calculate total duration from BarberService
+            total_duration = timedelta()
+            for service in barber_services:
+                duration = service.duration
+                logger.debug(f"BarberService ID: {service.id}, Duration: {duration} (Type: {type(duration)})")
+                total_duration += duration
+
+            logger.debug(f"Total Duration from BarberService: {total_duration}")
+
+            # Set end_time based on total_duration
+            if total_duration:
+                appointment.end_time = appointment.date_time + total_duration
+                logger.debug(f"Calculated End Time: {appointment.end_time}")
+
+            # Save the appointment with calculated end_time
+            appointment.save()
+            form.save_m2m()  # Save the many-to-many relationships
+
             return redirect('appointment_confirmation', appointment_id=appointment.id)
         else:
             return JsonResponse({'errors': form.errors}, status=400)

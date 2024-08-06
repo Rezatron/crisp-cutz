@@ -68,8 +68,9 @@
                 success: function(data) {
                     var serviceSelect = $('#id_services');
                     serviceSelect.empty();
+                    console.log("Fetched Services Data:", data);  // Debug print
                     $.each(data, function(index, service) {
-                        var duration = service.duration ? moment.duration(service.duration).humanize() : 'Undefined';
+                        var duration = service.duration ? service.duration : 'Undefined';
                         serviceSelect.append($('<option>', {
                             value: service.id,
                             text: `${service.name} - ${service.price} - ${duration}`

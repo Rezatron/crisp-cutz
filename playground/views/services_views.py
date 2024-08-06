@@ -13,9 +13,16 @@ def service_detail(request, service_id):
 
 def get_services_by_barber(request):
     barber_id = request.GET.get('barber_id')
-    if not barber_id:
-        return JsonResponse([], safe=False)
-    
-    barber_services = BarberService.objects.filter(barber_id=barber_id).select_related('service')
-    services = [{'id': bs.service.id, 'name': bs.service.name, 'price': bs.service.price} for bs in barber_services]
-    return JsonResponse(services, safe=False)
+    barber_services = BarberService.objects.filter(barber_id=barber_id)
+    services_data = [
+        {
+            'id': service.id,
+            'name': service.service.name,
+            'price': service.price,
+            'duration': str(service.duration)  # Convert duration to string
+        }
+        for service in barber_services
+    ]
+    # Print debug information to the server console
+    print("Services Data:", services_data)
+    return JsonResponse(services_data, safe=False)

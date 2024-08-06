@@ -7,6 +7,15 @@ import string
 from django.utils import timezone
 from django.conf import settings
 from datetime import timedelta
+import logging
+
+# Configure logging (for quick debugging purposes)
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger('playground')
+logger = logging.getLogger('playground')
+logger.setLevel(logging.DEBUG) 
+
+
 
 class CustomUser(AbstractUser):
     first_name = models.CharField(_('first name'), max_length=30, blank=True)
@@ -115,14 +124,26 @@ class Appointment(models.Model):
             super().save(*args, **kwargs)  # Save the instance to get an ID
 
             # Calculate total duration of all services
-            total_duration = sum(
-                BarberService.objects.filter(barber=self.barber, service__in=self.services.all()).values_list('duration', flat=True)
-            )
+            total_duration = timedelta()
+            barber_services = BarberService.objects.filter(barber=self.barber, service__in=self.services.all())
+
+            logger.debug(f"Calculating total duration for appointment ID: {self.id}")
+            logger.debug(f"Barber Services: {list(barber_services)}")
+
+            for service in barber_services:
+                duration = service.duration
+                logger.debug(f"BarberService ID: {service.id}, Duration: {duration} (Type: {type(duration)})")
+                total_duration += duration
+
+            logger.debug(f"Total Duration from BarberService: {total_duration}")
+
             if total_duration:
                 self.end_time = self.date_time + total_duration
+                logger.debug(f"Calculated End Time: {self.end_time}")
                 super().save(*args, **kwargs)  # Save again to update end_time
         else:
             super().save(*args, **kwargs)
+
 
 
 
