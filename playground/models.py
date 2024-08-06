@@ -97,14 +97,8 @@ class BarberService(models.Model):
 
     def __str__(self):
         return f"{self.barber.username} - {self.service.name}"
+    
 
-class AppointmentService(models.Model):
-    appointment = models.ForeignKey('Appointment', on_delete=models.CASCADE)
-    service = models.ForeignKey('Service', on_delete=models.CASCADE)
-    quantity = models.PositiveIntegerField(default=1)
-
-    def __str__(self):
-        return f"{self.appointment} - {self.service.name}"
 
 class Appointment(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='user_appointments')
@@ -117,19 +111,28 @@ class Appointment(models.Model):
         return f"Appointment with {self.barber} on {self.date_time}"
 
     def save(self, *args, **kwargs):
-        # Save the instance first
         if self.pk is None:  # Only calculate end_time if this is a new instance
             super().save(*args, **kwargs)  # Save the instance to get an ID
 
-            # Now calculate end_time using the saved instance
+            # Calculate total duration of all services
             total_duration = sum(
-                barberservice.duration for barberservice in BarberService.objects.filter(barber=self.barber, service__in=self.services.all())
+                BarberService.objects.filter(barber=self.barber, service__in=self.services.all()).values_list('duration', flat=True)
             )
-            self.end_time = self.date_time + timedelta(minutes=total_duration)
-            print(f"Calculated end time: {self.end_time}")  # Debugging line
-            super().save(*args, **kwargs)  # Save again to update end_time
+            if total_duration:
+                self.end_time = self.date_time + total_duration
+                super().save(*args, **kwargs)  # Save again to update end_time
         else:
-            super().save(*args, **kwargs)  # Save if updating existing instance
+            super().save(*args, **kwargs)
+
+
+
+class AppointmentService(models.Model):
+    appointment = models.ForeignKey('Appointment', on_delete=models.CASCADE)
+    service = models.ForeignKey('Service', on_delete=models.CASCADE)
+    quantity = models.PositiveIntegerField(default=1)
+
+    def __str__(self):
+        return f"{self.appointment} - {self.service.name}"
 
 
 

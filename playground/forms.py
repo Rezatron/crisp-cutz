@@ -198,22 +198,16 @@ class AppointmentForm(forms.ModelForm):
         initial_barber_id = kwargs.get('initial', {}).get('barber')
         super().__init__(*args, **kwargs)
 
-        print(f"Initial Barber ID in form: {initial_barber_id}")
-
         if initial_barber_id:
             self.fields['barber'].queryset = Barber.objects.filter(id=initial_barber_id)
             self.fields['barber'].initial = initial_barber_id
-            print(f"Available Barbers in form: {self.fields['barber'].queryset.values_list('id', flat=True)}")
 
             self.fields['services'].queryset = Service.objects.filter(
                 barberservice__barber_id=initial_barber_id
             ).distinct()
-            print(f"Available Services for Barber {initial_barber_id}: {self.fields['services'].queryset.values_list('id', flat=True)}")
         else:
             self.fields['barber'].queryset = Barber.objects.filter(is_available=True)
-            print(f"Available Barbers in form: {self.fields['barber'].queryset.values_list('id', flat=True)}")
             self.fields['services'].queryset = Service.objects.none()
-            print("No services available since no barber ID is provided.")
 
 
 class BarberServiceForm(forms.ModelForm):
