@@ -101,6 +101,7 @@ AUTH_PASSWORD_VALIDATORS = [
 AUTHENTICATION_BACKENDS = [
     'django.contrib.auth.backends.ModelBackend',
 ]
+"""
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
@@ -134,7 +135,7 @@ LOGGING = {
         },
     },
 }
-
+"""
 
 
 

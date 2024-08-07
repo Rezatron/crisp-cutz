@@ -6,12 +6,45 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Book an Appointment</title>
     <link rel="stylesheet" href="{% static 'styles.css' %}">
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/moment.min.js"></script>
     <style>
         /* Your styles here */
+        #errorModal, #confirmationModal {
+            display: none;
+            position: fixed;
+            z-index: 1;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0, 0, 0, 0.4);
+        }
+
+        .modal-content {
+            background-color: #fefefe;
+            margin: 15% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+        }
+
+        .close-btn {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+        }
+
+        .close-btn:hover,
+        .close-btn:focus {
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
+        }
     </style>
 </head>
 <body>
@@ -32,7 +65,7 @@
             <h3>No Barber Selected</h3>
         {% endif %}
 
-        <form method="post" action="{% url 'create_appointment_with_barber' barber.id %}" class="appointment-form">
+        <form id="appointment-form" method="post" action="{% url 'create_appointment_with_barber' barber.id %}" class="appointment-form">
             {% csrf_token %}
             
             <input type="hidden" name="barber" value="{{ barber.id }}">
@@ -49,6 +82,28 @@
 
             <button type="submit">Book Appointment</button>
         </form>
+    </div>
+
+    <!-- Modal for Error Messages -->
+    <div id="errorModal">
+        <div class="modal-content">
+            <span class="close-btn">&times;</span>
+            <p id="modal-message"></p>
+        </div>
+    </div>
+
+    <!-- Modal for Confirmation -->
+    <div id="confirmationModal">
+        <div class="modal-content">
+            <span class="close-btn">&times;</span>
+            <h2>Appointment Confirmed!</h2>
+            <div id="confirmation-details">
+                <!-- Details will be populated by JavaScript -->
+            </div>
+            <div class="back-link">
+                <a href="{% url 'appointment_list' %}">Back to My Appointments</a>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -68,7 +123,6 @@
                 success: function(data) {
                     var serviceSelect = $('#id_services');
                     serviceSelect.empty();
-                    console.log("Fetched Services Data:", data);  // Debug print
                     $.each(data, function(index, service) {
                         var duration = service.duration ? service.duration : 'Undefined';
                         serviceSelect.append($('<option>', {
@@ -83,12 +137,54 @@
             });
         }
 
+        $('#appointment-form').submit(function(event) {
+            event.preventDefault();  // Prevent default form submission
+            var form = $(this);
+            $.ajax({
+                url: form.attr('action'),
+                method: 'POST',
+                data: form.serialize(),
+                success: function(response) {
+                    if (response.success) {
+                        $('#confirmation-details').html(`
+                            <p><strong>Barber:</strong> ${response.appointment.barber.first_name} ${response.appointment.barber.last_name}</p>
+                            <p><strong>Date and Time:</strong> ${response.appointment.date_time}</p>
+                            <p><strong>Duration:</strong> ${response.appointment.end_time} (From ${response.appointment.date_time})</p>
+                            <p><strong>Location:</strong> ${response.appointment.location}</p>
+                            <p><strong>Services:</strong> ${response.appointment.services.join(', ')}</p>
+                        `);
+                        $('#confirmationModal').show();
+                    }
+                },
+                error: function(xhr) {
+                    var errorResponse = JSON.parse(xhr.responseText);
+                    showError(errorResponse.errors || 'An error occurred.');
+                }
+            });
+        });
+
+        function showError(message) {
+            $('#modal-message').text(message);
+            $('#errorModal').show();
+        }
+
+        $('.close-btn').click(function() {
+            $('#errorModal').hide();
+            $('#confirmationModal').hide();
+        });
+
+        $(window).click(function(event) {
+            if ($(event.target).is('#errorModal') || $(event.target).is('#confirmationModal')) {
+                $('#errorModal').hide();
+                $('#confirmationModal').hide();
+            }
+        });
+
         var barberId = '{{ barber.id }}';
         if (barberId) {
             fetchServices(barberId);
         }
     });
     </script>
-
 </body>
 </html>

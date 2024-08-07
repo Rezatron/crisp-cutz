@@ -111,8 +111,8 @@ class BarberService(models.Model):
 
 class Appointment(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='user_appointments')
-    barber = models.ForeignKey('Barber', on_delete=models.CASCADE, related_name='barber_appointments')
-    services = models.ManyToManyField('Service', through='AppointmentService')
+    barber = models.ForeignKey(Barber, on_delete=models.CASCADE, related_name='barber_appointments')
+    services = models.ManyToManyField(Service, through='AppointmentService')
     date_time = models.DateTimeField()
     end_time = models.DateTimeField(blank=True, null=True)
 
@@ -143,6 +143,7 @@ class Appointment(models.Model):
                 super().save(*args, **kwargs)  # Save again to update end_time
         else:
             super().save(*args, **kwargs)
+
 
 
 

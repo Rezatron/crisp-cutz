@@ -3,7 +3,7 @@ from django.contrib.auth.decorators import login_required
 from django.utils.decorators import method_decorator
 from django.urls import reverse
 from django.http import JsonResponse
-from ..models import Barber, Service, Appointment, AppointmentService, BarberService
+from ..models import Barber, Service, Appointment, AppointmentService, BarberService, Availability
 from ..forms import AppointmentForm
 import logging
 from datetime import timedelta 
@@ -42,11 +42,30 @@ def create_appointment(request, barber_id=None):
                 appointment.end_time = appointment.date_time + total_duration
                 logger.debug(f"Calculated End Time: {appointment.end_time}")
 
+            # Check barber availability
+            if not is_barber_available(appointment.barber, appointment.date_time, appointment.end_time):
+                return JsonResponse({'errors': 'The barber is not available at the selected time.'}, status=400)
+
             # Save the appointment with calculated end_time
             appointment.save()
             form.save_m2m()  # Save the many-to-many relationships
 
-            return redirect('appointment_confirmation', appointment_id=appointment.id)
+            # Block out the availability
+            block_barber_availability(appointment.barber, appointment.date_time, appointment.end_time)
+
+            return JsonResponse({
+                'success': True,
+                'appointment': {
+                    'barber': {
+                        'first_name': appointment.barber.first_name,
+                        'last_name': appointment.barber.last_name,
+                    },
+                    'date_time': appointment.date_time.strftime("%B %d, %Y %I:%M %p"),
+                    'end_time': appointment.end_time.strftime("%I:%M %p"),
+                    'location': appointment.barber.location,
+                    'services': [service.name for service in appointment.services.all()]
+                }
+            })
         else:
             logger.debug(f"Form errors: {form.errors}")
             return JsonResponse({'errors': form.errors}, status=400)
@@ -74,3 +93,55 @@ def appointment_detail(request, appointment_id):
 def appointment_confirmation(request, appointment_id):
     appointment = get_object_or_404(Appointment, id=appointment_id)
     return render(request, 'appointments/confirmation.html', {'appointment': appointment})
+
+
+def is_barber_available(barber, start_time, end_time):
+    """Check if the barber is available for the requested time slot."""
+    availabilities = Availability.objects.filter(
+        barber=barber,
+        is_available=True,
+        start_time__lt=end_time,
+        end_time__gt=start_time
+    )
+
+    for availability in availabilities:
+        if availability.is_available_for_appointment(start_time, end_time):
+            return True
+    return False
+
+
+
+
+def block_barber_availability(barber, start_time, end_time):
+    """Block out the barber's availability for the given time slot."""
+    overlapping_availabilities = Availability.objects.filter(
+        barber=barber,
+        is_available=True,
+        start_time__lt=end_time,
+        end_time__gt=start_time
+    )
+
+    for availability in overlapping_availabilities:
+        if availability.start_time < start_time and availability.end_time > end_time:
+            # Split the availability into two slots
+            Availability.objects.create(
+                barber=barber,
+                start_time=availability.start_time,
+                end_time=start_time,
+                is_available=True
+            )
+            Availability.objects.create(
+                barber=barber,
+                start_time=end_time,
+                end_time=availability.end_time,
+                is_available=True
+            )
+            availability.delete()
+        elif availability.start_time < start_time:
+            availability.end_time = start_time
+            availability.save()
+        elif availability.end_time > end_time:
+            availability.start_time = end_time
+            availability.save()
+        else:
+            availability.delete()

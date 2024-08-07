@@ -5,7 +5,6 @@ from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
 from .models import Barber, Customer, Availability, Appointment, Service, AppointmentService, BarberService
 from django.contrib.auth.models import User
 from django.contrib.auth import authenticate, get_user_model
-from .utils import is_barber_available
 from django.core.exceptions import ValidationError
 from .views.common_views import address_to_coordinates
 from django.conf import settings
