@@ -7,6 +7,8 @@ from ..models import Barber, Service, Appointment, AppointmentService, BarberSer
 from ..forms import AppointmentForm
 import logging
 from datetime import timedelta 
+from django.http import HttpResponse
+
 
 logger = logging.getLogger('playground')
 
@@ -145,3 +147,6 @@ def block_barber_availability(barber, start_time, end_time):
             availability.save()
         else:
             availability.delete()
+
+
+

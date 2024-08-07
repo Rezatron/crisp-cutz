@@ -1,12 +1,11 @@
-{% load static %} <!-- Load static tag library -->
-
+{% load static %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Appointments</title>
-    <link rel="stylesheet" href="{% static 'styles.css' %}"> <!-- Link to your CSS file -->
+    <title>My Appointments</title>
+    <link rel="stylesheet" href="{% static 'styles.css' %}">
 </head>
 <body>
 
@@ -17,12 +16,29 @@
     <a href="{% url 'customer_profile' %}" class="tablinks">Profile</a>
 </div>
 
-<!-- Content for Appointments tab goes here -->
-<h3>Appointments Content</h3>
+<h3>My Appointments</h3>
 
-<span>Hello, {{request.user}}</span>
+{% if appointments %}
+    <ul>
+        {% for appointment in appointments %}
+            <li>
+                <strong>Barber:</strong> {{ appointment.barber.first_name }} {{ appointment.barber.last_name }}<br>
+                <strong>Date and Time:</strong> {{ appointment.date_time|date:"F j, Y, g:i a" }}<br>
+                <strong>Duration:</strong> {{ appointment.end_time|date:"H:i" }} (From {{ appointment.date_time|date:"H:i" }})<br>
+                <strong>Location:</strong> {{ appointment.barber.location }}<br>
+                <strong>Services:</strong>
+                {% for service in appointment.services.all %}
+                    {{ service.name }}{% if not forloop.last %}, {% endif %}
+                {% endfor %}
+            </li>
+        {% endfor %}
+    </ul>
+{% else %}
+    <p>You have no upcoming appointments.</p>
+{% endif %}
+
+<span>Hello, {{ request.user.username }}</span>
 <span><a href="{% url 'logout_customer' %}">Logout</a></span>
 
-<script src="{% static 'scripts.js' %}"></script> <!-- Link to your JavaScript file -->
 </body>
 </html>

@@ -101,41 +101,26 @@ AUTH_PASSWORD_VALIDATORS = [
 AUTHENTICATION_BACKENDS = [
     'django.contrib.auth.backends.ModelBackend',
 ]
-"""
+
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
-    'formatters': {
-        'verbose': {
-            'format': '{levelname} {asctime} {module} {message}',
-            'style': '{',
-        },
-        'simple': {
-            'format': '{levelname} {message}',
-            'style': '{',
-        },
-    },
     'handlers': {
         'console': {
-            'level': 'DEBUG',  # Set to DEBUG to see detailed logs in the console
+            'level': 'ERROR',
             'class': 'logging.StreamHandler',
-            'formatter': 'simple',
         },
     },
     'loggers': {
         'django': {
             'handlers': ['console'],
-            'level': 'WARNING',  # Adjust to WARNING to reduce verbosity of Django logs
+            'level': 'ERROR',
             'propagate': True,
-        },
-        'playground': {  # Specific logger for your app
-            'handlers': ['console'],
-            'level': 'DEBUG',  # Set to DEBUG for detailed logs from the playground app
-            'formatter': 'simple',
         },
     },
 }
-"""
+
+
 
 
 

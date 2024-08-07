@@ -2,28 +2,26 @@ from django.shortcuts import render, redirect
 from django.contrib import messages
 from django.contrib.auth import authenticate, login
 from ..forms import CustomerRegistrationForm, CustomerLoginForm, CustomerUpdateForm
-from ..models import Customer, Barber
+from ..models import Customer, Barber, Appointment
 from django.contrib.auth.decorators import login_required
 from .common_views import address_to_coordinates
 from django.urls import reverse
-
 
 def customer_register(request):
     if request.method == 'POST':
         form = CustomerRegistrationForm(request.POST)
         if form.is_valid():
-            customer = form.save(commit=False)
-            customer.location = form.cleaned_data.get('location')
-            customer.save()
+            user = form.save(commit=False)
+            user.save()
+            Customer.objects.create(user=user, location=form.cleaned_data.get('location'))
             messages.success(request, 'Registration successful. You can now login.')
             return redirect(reverse('customer_login'))
         else:
-            # Print or log the form errors for debugging
             print(form.errors)
             messages.error(request, 'Please correct the errors below.')
     else:
         form = CustomerRegistrationForm()
-
+    
     return render(request, 'registration/customer_registration.html', {'form': form})
 
 def customer_login_view(request):
@@ -77,18 +75,46 @@ def explore(request):
         'latitude': customer.latitude,
         'longitude': customer.longitude,
         'barbers_details': barbers_details,
-        'has_barbers': bool(barbers_details),  # Add this line
+        'has_barbers': bool(barbers_details),
     }
     return render(request, 'customer_templates/customer_explore.html', context)
 
-
 @login_required
-def appointments(request):
-    return render(request, 'customer_templates/customer_appointments.html')
+def customer_appointments(request):
+    user = request.user
+    try:
+        customer = user.customer
+        appointments = Appointment.objects.filter(user=customer)
+
+        # Debugging: Print user and appointments count
+        print(f"User: {user.username}")
+        print(f"Number of appointments found: {appointments.count()}")
+        for appointment in appointments:
+            print(f"Appointment ID: {appointment.id}, Date and Time: {appointment.date_time}, User: {appointment.user.username}")
+
+        return render(request, 'customer_templates/customer_appointments.html', {
+            'appointments': appointments
+        })
+    except Customer.DoesNotExist:
+        messages.error(request, "No customer profile found. Please complete your profile first.")
+        return redirect('profile')
 
 @login_required
 def profile(request):
-    form = CustomerUpdateForm(instance=request.user.customer)
+    try:
+        customer = request.user.customer
+        form = CustomerUpdateForm(instance=customer)
+    except Customer.DoesNotExist:
+        customer = Customer(user=request.user)
+        form = CustomerUpdateForm(instance=customer)
+
+    if request.method == 'POST':
+        form = CustomerUpdateForm(request.POST, instance=customer)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Your profile has been updated.')
+            return redirect('profile')
+
     return render(request, 'customer_templates/customer_profile.html', {'form': form})
 
 @login_required
