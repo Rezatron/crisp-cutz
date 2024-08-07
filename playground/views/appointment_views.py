@@ -24,7 +24,7 @@ def create_appointment(request, barber_id=None):
             # Get the selected service IDs from the form
             selected_service_ids = form.cleaned_data['services']
             barber_services = BarberService.objects.filter(barber=appointment.barber, service__in=selected_service_ids)
-            
+
             logger.debug(f"Creating appointment with barber ID: {appointment.barber.id}")
             logger.debug(f"Selected Service IDs: {selected_service_ids}")
 
@@ -48,6 +48,7 @@ def create_appointment(request, barber_id=None):
 
             return redirect('appointment_confirmation', appointment_id=appointment.id)
         else:
+            logger.debug(f"Form errors: {form.errors}")
             return JsonResponse({'errors': form.errors}, status=400)
     else:
         form = AppointmentForm(initial={'barber': barber_id})

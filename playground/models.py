@@ -120,7 +120,7 @@ class Appointment(models.Model):
         return f"Appointment with {self.barber} on {self.date_time}"
 
     def save(self, *args, **kwargs):
-        if self.pk is None:  # Only calculate end_time if this is a new instance
+        if self.pk is None and not self.end_time:  # Only calculate end_time if this is a new instance
             super().save(*args, **kwargs)  # Save the instance to get an ID
 
             # Calculate total duration of all services
@@ -143,7 +143,6 @@ class Appointment(models.Model):
                 super().save(*args, **kwargs)  # Save again to update end_time
         else:
             super().save(*args, **kwargs)
-
 
 
 
