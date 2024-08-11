@@ -1,32 +1,39 @@
-/* The Modal (background) */
+/* Base styles (mobile-first) */
+body {
+    font-size: 16px;
+    margin: 0;
+    padding: 0;
+}
+
+/* Modal Styles */
 .modal {
-    display: none; /* Hidden by default */
-    position: fixed; /* Stay in place */
-    z-index: 1; /* Sit on top */
+    display: none;
+    position: fixed;
+    z-index: 1;
     left: 0;
     top: 0;
-    width: 100%; /* Full width */
-    height: 100%; /* Full height */
-    overflow: auto; /* Enable scroll if needed */
-    background-color: rgba(0, 0, 0, 0.4); /* Black w/ opacity */
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0, 0, 0, 0.4);
 }
 
-/* Modal Content */
 .modal-content {
     background-color: #fefefe;
-    margin: auto;
+    margin: 5% auto;
     padding: 20px;
     border: 1px solid #888;
-    width: 80%;
-    max-height: 80vh; /* Maximum height */
-    overflow-y: auto; /* Enable vertical scrolling */
+    width: 90%;
+    /* Adjust for mobile */
+    max-height: 80vh;
+    overflow-y: auto;
 }
 
-/* The Close Button */
 .close {
     color: #aaaaaa;
     float: right;
-    font-size: 28px;
+    font-size: 24px;
+    /* Slightly smaller on mobile */
     font-weight: bold;
 }
 
@@ -35,4 +42,25 @@
     color: #000;
     text-decoration: none;
     cursor: pointer;
+}
+
+/* Tablet and Larger Devices */
+@media (min-width: 768px) {
+    .modal-content {
+        width: 80%;
+        /* Wider on larger screens */
+    }
+
+    .close {
+        font-size: 28px;
+        /* Larger close button on desktop */
+    }
+}
+
+/* Desktop and Larger Devices */
+@media (min-width: 1200px) {
+    .modal-content {
+        width: 60%;
+        /* Even wider on large screens */
+    }
 }

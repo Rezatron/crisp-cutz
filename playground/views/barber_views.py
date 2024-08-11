@@ -2,15 +2,16 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.contrib.auth import authenticate, login
 from django.http import HttpResponseRedirect, JsonResponse
-from ..forms import BarberRegistrationForm, BarberLoginForm, BarberUpdateForm, AvailabilityForm, BarberServiceForm, ServiceForm, Service
-from ..models import Appointment, Barber, Availability, Service, BarberService
-from django.contrib.auth.decorators import login_required
 from django.utils import timezone
-import datetime
-import json  # Import json module for handling JSON data
-from .common_views import address_to_coordinates
 from django.urls import reverse
 from django.forms import modelformset_factory
+import datetime
+import json
+
+from ..forms import BarberRegistrationForm, BarberLoginForm, BarberUpdateForm, AvailabilityForm, BarberServiceForm, ServiceForm
+from ..models import Appointment, Barber, Availability, Service, BarberService
+from .common_views import address_to_coordinates
+from django.contrib.auth.decorators import login_required
 
 def barber_register(request):
     if request.method == 'POST':
@@ -24,7 +25,6 @@ def barber_register(request):
             print(form.errors)
     else:
         form = BarberRegistrationForm()
-
     return render(request, 'barber_registration.html', {'form': form})
 
 def barber_login_view(request):
@@ -41,7 +41,6 @@ def barber_login_view(request):
                 messages.error(request, 'Invalid username or password for barber')
     else:
         form = BarberLoginForm()
-
     return render(request, 'registration/barber_login.html', {'form': form})
 
 @login_required
@@ -53,8 +52,39 @@ def barber_dashboard(request):
 @login_required
 def barber_appointments(request):
     barber = request.user.barber
-    appointments = Appointment.objects.filter(barber=barber)
-    return render(request, 'barber_templates/barber_appointments.html', {'appointments': appointments})
+    appointments = Appointment.objects.filter(barber=barber).order_by('date_time')
+    
+    # Fetch availability data
+    today = timezone.now().date()
+    availability = Availability.objects.filter(barber=barber, start_time__date__gte=today).order_by('start_time')
+
+    # Format availability data for day/week view
+    availability_by_day = {}
+    for avail in availability:
+        day = avail.start_time.date()
+        if day not in availability_by_day:
+            availability_by_day[day] = []
+        availability_by_day[day].append(avail)
+
+    # Fetch and format availability data for the monthly view
+    start_of_month = today.replace(day=1)
+    end_of_month = (today.replace(day=28) + datetime.timedelta(days=4)).replace(day=1) - datetime.timedelta(days=1)
+    monthly_availability = Availability.objects.filter(barber=barber, start_time__date__range=[start_of_month, end_of_month]).order_by('start_time')
+
+    availability_by_day_monthly = {}
+    for avail in monthly_availability:
+        day = avail.start_time.date()
+        if day not in availability_by_day_monthly:
+            availability_by_day_monthly[day] = []
+        availability_by_day_monthly[day].append(avail)
+
+    return render(request, 'barber_templates/barber_appointments.html', {
+        'appointments': appointments,
+        'availability_by_day': availability_by_day,
+        'availability_by_day_monthly': availability_by_day_monthly,
+        'current_month': today.strftime('%B %Y'),
+    })
+
 
 @login_required
 def barber_reports(request):
@@ -77,7 +107,6 @@ def barber_profile(request):
 @login_required
 def update_barber(request):
     barber = request.user.barber
-
     if request.method == 'POST':
         form = BarberUpdateForm(request.POST, request.FILES, instance=barber)
         if form.is_valid():
@@ -92,7 +121,6 @@ def update_barber(request):
             print(form.errors)
     else:
         form = BarberUpdateForm(instance=barber)
-
     return render(request, 'barber_templates/barber_profile.html', {'form': form})
 
 @login_required
@@ -106,7 +134,6 @@ def barber_settings(request):
             return redirect('barber_settings')
     else:
         form = BarberUpdateForm(instance=barber)
-
     return render(request, 'barber_templates/barber_settings.html', {'form': form})
 
 @login_required
@@ -124,7 +151,6 @@ def manage_availability(request):
             messages.error(request, 'Please correct the errors below.')
     else:
         availability_form = AvailabilityForm()
-
     availabilities = barber.availabilities.all()
     return render(request, 'barber_templates/manage_availability.html', {'availability_form': availability_form, 'availabilities': availabilities})
 
@@ -202,22 +228,17 @@ def delete_availability(request):
 def get_availability_for_date(request):
     if request.method == 'GET':
         date_str = request.GET.get('date')
-
         if not date_str:
             return JsonResponse({'status': 'error', 'message': 'Date parameter is missing'}, status=400)
-
         try:
             start_date = datetime.datetime.strptime(date_str, '%Y-%m-%d').date()
             start_date = timezone.make_aware(datetime.datetime.combine(start_date, datetime.datetime.min.time()))
-
             barber = request.user.barber
             availabilities = barber.availabilities.filter(start_time__date=start_date)
-
             availability_list = [{
                 'start_time': availability.start_time.isoformat(),
                 'end_time': availability.end_time.isoformat(),
             } for availability in availabilities]
-
             return JsonResponse({'status': 'success', 'data': availability_list})
         except ValueError as e:
             return JsonResponse({'status': 'error', 'message': f'Invalid date format: {e}'}, status=400)
@@ -234,66 +255,24 @@ def barber_services(request, barber_id):
 def create_service(request):
     if request.method == 'POST':
         service_form = ServiceForm(request.POST)
-        
         if service_form.is_valid():
-            # Save the new service
             service = service_form.save()
-            
-            # Create a BarberService entry for the current barber only
             barber = request.user.barber
-            
-            # Check if BarberService entry already exists for this barber and service
             if not BarberService.objects.filter(barber=barber, service=service).exists():
                 BarberService.objects.create(
                     barber=barber,
                     service=service,
-                    price=service.price,  # Use the price from the Service
-                    duration=service.duration  # Use the duration from the Service
+                    price=service.price,
+                    duration=service.duration
                 )
-            
             messages.success(request, 'Service created successfully!')
             return redirect('manage_services')
     else:
         service_form = ServiceForm()
-    
-    return render(request, 'barber_templates/create_service.html', {
-        'service_form': service_form
-    })
+    return render(request, 'barber_templates/create_service.html', {'service_form': service_form})
 
 @login_required
 def manage_services(request):
     barber = request.user.barber
-    
-    BarberServiceFormSet = modelformset_factory(
-        BarberService,
-        form=BarberServiceForm,
-        extra=1,
-        can_delete=True
-    )
-    
-    if request.method == 'POST':
-        formset = BarberServiceFormSet(request.POST)
-        
-        if formset.is_valid():
-            # Process the formset
-            for form in formset:
-                if form.cleaned_data.get('DELETE'):
-                    if form.instance.pk:
-                        form.instance.delete()
-                else:
-                    # Save new or updated service
-                    service = form.save(commit=False)
-                    service.barber = barber
-                    service.save()
-            
-            messages.success(request, 'Services updated successfully!')
-            return redirect('manage_services')
-    else:
-        # Initialize formset with existing services
-        existing_services = barber.barberservice_set.all()
-        formset = BarberServiceFormSet(queryset=existing_services)
-    
-    return render(request, 'barber_templates/manage_services.html', {
-        'formset': formset,
-        'service_form': ServiceForm()  # Pass a blank service form for the create service modal
-    })
+    services = barber.services.all()
+    return render(request, 'barber_templates/manage_services.html', {'services': services})
