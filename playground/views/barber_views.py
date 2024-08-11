@@ -7,6 +7,7 @@ from django.urls import reverse
 from django.forms import modelformset_factory
 import datetime
 import json
+from collections import OrderedDict
 
 from ..forms import BarberRegistrationForm, BarberLoginForm, BarberUpdateForm, AvailabilityForm, BarberServiceForm, ServiceForm
 from ..models import Appointment, Barber, Availability, Service, BarberService
@@ -49,41 +50,55 @@ def barber_dashboard(request):
     appointments = Appointment.objects.filter(barber=barber)
     return render(request, 'barber_templates/barber_dashboard.html', {'appointments': appointments})
 
+
+
 @login_required
 def barber_appointments(request):
     barber = request.user.barber
-    appointments = Appointment.objects.filter(barber=barber).order_by('date_time')
+    today = timezone.now().date()
+    appointments = Appointment.objects.filter(barber=barber, date_time__date__gte=today).order_by('date_time')
     
     # Fetch availability data
-    today = timezone.now().date()
     availability = Availability.objects.filter(barber=barber, start_time__date__gte=today).order_by('start_time')
+    
+    # Prepare the data structure for 5 days starting from today
+    days_to_show = [today + datetime.timedelta(days=i) for i in range(5)]
+    schedule_by_day = OrderedDict()
 
-    # Format availability data for day/week view
-    availability_by_day = {}
+    for day in days_to_show:
+        day_start = datetime.datetime.combine(day, datetime.time(8, 0))
+        day_end = datetime.datetime.combine(day, datetime.time(16, 0))
+        hourly_slots = OrderedDict()
+
+        # Generate hourly slots from 8:00 to 16:00
+        current_time = day_start
+        while current_time < day_end:
+            hourly_slots[current_time.time()] = {
+                'appointment': None,
+                'availability': True  # Set availability to True by default
+            }
+            current_time += datetime.timedelta(hours=1)
+
+        schedule_by_day[day] = hourly_slots
+
+    # Fill in the appointments and availability in the schedule
+    for appointment in appointments:
+        day = appointment.date_time.date()
+        if day in schedule_by_day:
+            schedule_by_day[day][appointment.date_time.time()]['appointment'] = appointment
+
     for avail in availability:
         day = avail.start_time.date()
-        if day not in availability_by_day:
-            availability_by_day[day] = []
-        availability_by_day[day].append(avail)
-
-    # Fetch and format availability data for the monthly view
-    start_of_month = today.replace(day=1)
-    end_of_month = (today.replace(day=28) + datetime.timedelta(days=4)).replace(day=1) - datetime.timedelta(days=1)
-    monthly_availability = Availability.objects.filter(barber=barber, start_time__date__range=[start_of_month, end_of_month]).order_by('start_time')
-
-    availability_by_day_monthly = {}
-    for avail in monthly_availability:
-        day = avail.start_time.date()
-        if day not in availability_by_day_monthly:
-            availability_by_day_monthly[day] = []
-        availability_by_day_monthly[day].append(avail)
+        start_hour = avail.start_time.time().replace(minute=0, second=0, microsecond=0)
+        if day in schedule_by_day and start_hour in schedule_by_day[day]:
+            schedule_by_day[day][start_hour]['availability'] = avail.is_available
 
     return render(request, 'barber_templates/barber_appointments.html', {
-        'appointments': appointments,
-        'availability_by_day': availability_by_day,
-        'availability_by_day_monthly': availability_by_day_monthly,
-        'current_month': today.strftime('%B %Y'),
+        'schedule_by_day': schedule_by_day,
     })
+
+
+
 
 
 @login_required

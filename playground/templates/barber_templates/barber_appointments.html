@@ -13,6 +13,7 @@
             font-size: 16px;
             margin: 0;
             padding: 0;
+            font-family: Arial, sans-serif;
         }
 
         /* Tab container */
@@ -45,149 +46,77 @@
             display: block;
         }
 
-        /* Calendar and appointment styles */
-        .calendar, .day-week-view {
+        /* Schedule styles */
+        .schedule {
             padding: 10px;
         }
 
-        .calendar .day, .day-week-view .day {
-            border: 1px solid #ddd;
-            padding: 10px;
-            margin: 5px;
-            border-radius: 5px;
+        .day {
+            margin-bottom: 20px;
         }
 
-        .calendar .day h4, .day-week-view .day h4 {
+        .day h4 {
             margin: 0;
             font-size: 1.2em;
             background: #e2e2e2;
             padding: 5px;
+            border-radius: 5px;
         }
 
-        .appointment, .avail {
-            margin-bottom: 5px;
+        .hourly-slot {
+            border: 1px solid #ddd;
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 5px;
+            background: #f9f9f9;
         }
 
-        .appointment {
+        .hourly-slot.appointment {
             background: #dff0d8;
-            padding: 5px;
-            border-radius: 5px;
         }
 
-        .avail {
+        .hourly-slot.availability {
             background: #d9edf7;
-            padding: 5px;
-            border-radius: 5px;
+        }
+
+        .hourly-slot.empty {
+            background: #f9f9f9;
+            color: #999;
         }
     </style>
-
 </head>
 <body>
     <div class="tab">
-        <button class="tablinks" onclick="openTab(event, 'DayWeek')">Day/Week View</button>
-        <button class="tablinks" onclick="openTab(event, 'Month')">Monthly View</button>
+        <button class="tablinks active">Hourly Schedule</button>
     </div>
 
-    <div id="DayWeek" class="tabcontent">
-        <h3>Day/Week View</h3>
-        <div class="day-week-view">
-            {% for day, availabilities in availability_by_day.items %}
+    <div id="HourlySchedule" class="tabcontent active">
+        <div class="schedule">
+            {% for day, slots in schedule_by_day.items %}
             <div class="day">
-                <h4>{{ day }}</h4>
-                <div class="appointments">
-                    <strong>Appointments:</strong>
-                    {% for appointment in appointments %}
-                        {% if appointment.date_time.date == day %}
-                        <div class="appointment">
-                            <strong>Time:</strong> {{ appointment.date_time|date:"H:i" }} - {{ appointment.end_time|date:"H:i" }}<br>
-                            <strong>Customer:</strong> {{ appointment.user.username }}
-                        </div>
-                        {% endif %}
-                    {% endfor %}
+                <h4>{{ day|date:"D, M d, Y" }}</h4>
+                {% for time, slot in slots.items %}
+                <div class="hourly-slot {% if slot.appointment %}appointment{% elif slot.availability %}availability{% else %}empty{% endif %}">
+                    <strong>{{ time|time:"H:i" }}</strong><br>
+                    {% if slot.appointment %}
+                        <strong>Customer:</strong> {{ slot.appointment.user.username }}<br>
+               
+                    {% elif slot.availability %}
+                        <strong>Status:</strong> Available
+                    {% else %}
+                        No appointment or availability
+                    {% endif %}
                 </div>
-                <div class="availability">
-                    <strong>Availability:</strong>
-                    {% for avail in availabilities %}
-                        <div class="avail">
-                            <strong>Time:</strong> {{ avail.start_time|date:"H:i" }} - {{ avail.end_time|date:"H:i" }}<br>
-                            <strong>Status:</strong> {{ avail.is_available|yesno:"Available,Not Available" }}
-                        </div>
-                    {% endfor %}
-                </div>
+                {% endfor %}
             </div>
             {% endfor %}
         </div>
     </div>
 
-    <div id="Month" class="tabcontent">
-        <h3>Monthly View</h3>
-        <div class="calendar">
-            {% for day, availabilities in availability_by_day_monthly.items %}
-            <div class="day">
-                <h4>{{ day }}</h4>
-                <div class="appointments">
-                    <strong>Appointments:</strong>
-                    {% for appointment in appointments %}
-                        {% if appointment.date_time.date == day %}
-                        <div class="appointment">
-                            <strong>Time:</strong> {{ appointment.date_time|date:"H:i" }} - {{ appointment.end_time|date:"H:i" }}<br>
-                            <strong>Customer:</strong> {{ appointment.user.username }}
-                        </div>
-                        {% endif %}
-                    {% endfor %}
-                </div>
-                <div class="availability">
-                    <strong>Availability:</strong>
-                    {% for avail in availabilities %}
-                        <div class="avail">
-                            <strong>Time:</strong> {{ avail.start_time|date:"H:i" }} - {{ avail.end_time|date:"H:i" }}<br>
-                            <strong>Status:</strong> {{ avail.is_available|yesno:"Available,Not Available" }}
-                        </div>
-                    {% endfor %}
-                </div>
-            </div>
-            {% endfor %}
-        </div>
+    <div>
+        <span>Hello, {{ request.user.username }}</span>
+        <span><a href="{% url 'logout_customer' %}">Logout</a></span>
     </div>
 
-    <span>Hello, {{ request.user }}</span>
-    <span><a href="{% url 'logout_customer' %}">Logout</a></span>
-
-    <script>
-        function openTab(evt, tabName) {
-            var i, tabcontent, tablinks;
-            tabcontent = document.getElementsByClassName("tabcontent");
-            for (i = 0; i < tabcontent.length; i++) {
-                tabcontent[i].style.display = "none";
-                tabcontent[i].classList.remove("active");
-            }
-            tablinks = document.getElementsByClassName("tablinks");
-            for (i = 0; i < tablinks.length; i++) {
-                tablinks[i].className = tablinks[i].className.replace(" active", "");
-            }
-            document.getElementById(tabName).style.display = "block";
-            document.getElementById(tabName).classList.add("active");
-            evt.currentTarget.className += " active";
-        }
-
-        // Set default tab to be open
-        document.getElementsByClassName("tablinks")[0].click();
-    </script>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
