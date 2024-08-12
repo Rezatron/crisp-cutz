@@ -10,27 +10,64 @@
         body {
             font-size: 16px;
             margin: 0;
-            padding: 0;©
+            padding: 0;
             font-family: Arial, sans-serif;
             background: #f4f4f4;
         }
-
-        .timeline-container {
+        .tabs {
             display: flex;
+            cursor: pointer;
             margin: 20px;
         }
-
+        .tab {
+            flex: 1;
+            padding: 10px;
+            text-align: center;
+            background: #ddd;
+            border: 1px solid #ccc;
+            border-bottom: none;
+            margin-right: -1px;
+        }
+        .tab.active {
+            background: white;
+            font-weight: bold;
+        }
+        .tab-content {
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-top: none;
+            background: white;
+        }
+        .calendar-container, .timeline-container {
+            margin: 20px;
+        }
+        .calendar-header {
+            margin-bottom: 10px;
+            text-align: right;
+        }
+        .calendar-header button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .calendar-header button:hover {
+            background: #0056b3;
+        }
+        .timeline-container {
+            display: flex;
+        }
         .time-labels {
             flex: 0 0 60px;
             padding-right: 10px;
         }
-
         .time-label {
-            height: 60px; /* Each block represents 1 hour */
+            height: 60px;
             position: relative;
             border-bottom: 1px solid #ccc;
         }
-
         .time-label span {
             position: absolute;
             top: -10px;
@@ -38,12 +75,10 @@
             font-size: 0.9em;
             color: #666;
         }
-
         .timeline {
             flex: 1;
             position: relative;
         }
-
         .event {
             position: absolute;
             left: 0;
@@ -54,71 +89,113 @@
             margin: 2px 0;
             box-sizing: border-box;
         }
-
         .event.appointment {
-            background: #f8d7da; /* Light red for appointments */
+            background: #f8d7da;
         }
-
         .event.availability {
-            background: #d4edda; /* Light green for available slots */
+            background: #d4edda;
         }
-
         .event .time {
             font-weight: bold;
             margin-bottom: 5px;
         }
-
         .event .details {
             font-size: 0.9em;
         }
-
         .event .customer-info {
             font-weight: bold;
         }
-
         .event .service-info {
             font-style: italic;
+        }
+        .navigation-buttons {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+        .navigation-buttons a {
+            text-decoration: none;
+            color: #007bff;
+        }
+        .navigation-buttons a:hover {
+            text-decoration: underline;
+        }
+        .date-picker {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+        .date-picker input {
+            padding: 10px;
+            font-size: 16px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
         }
     </style>
 </head>
 <body>
-    <div class="timeline-container">
-    <div class="time-labels">
-        {% for hour in hours_list %}
-        <div class="time-label">
-            <span>{{ hour }}</span>
-        </div>
-        {% endfor %}
+    <div class="tab">
+        <a href="{% url 'barber_dashboard' %}" class="tablinks">Dashboard</a>
+        <a href="{% url 'barber_appointments' %}" class="tablinks">My Appointments</a>
+        <a href="{% url 'barber_reports' %}" class="tablinks">Reports</a>
+        <a href="{% url 'barber_profile' %}" class="tablinks">Profile</a>
+        <a href="{% url 'barber_settings' %}" class="tablinks">Settings</a>
     </div>
-    <div class="timeline">
-        {% for event in events %}
-        <div class="event {% if event.type == 'appointment' %}appointment{% else %}availability{% endif %}"
-             style="top: {{ event.top_position }}px; height: {{ event.height }}px;">
-            <div class="time">
-                <strong>{{ event.start_time|time:"H:i" }} - {{ event.end_time|time:"H:i" }}</strong>
-            </div>
-            <div class="details">
-                {% if event.type == 'appointment' %}
-                    <div class="customer-info">
-                        <strong>Customer:</strong> {{ event.customer }}<br>
-                        <strong>Services:</strong> {% for service in event.services %}{{ service.name }}{% if not forloop.last %}, {% endif %}{% endfor %}
-                    </div>
-                {% else %}
-                    <strong>Status:</strong> Available
-                {% endif %}
-            </div>
-        </div>
-        {% endfor %}
-    </div>
-</div>
 
-    <div>
-        <a href="?view_type=daily&date={{ prev_day|date:'Y-m-d' }}">Previous Day</a>
-        <a href="?view_type=daily&date={{ next_day|date:'Y-m-d' }}">Next Day</a>
+    <div class="tabs">
+        <div class="tab active" data-tab="daily">
+            <a href="?view_type=daily&date={{ selected_date|date:'Y-m-d' }}">Daily View</a>
+        </div>
+        <div class="tab" data-tab="monthly">
+            <a href="{% url 'barber_monthly_appointments' %}">Monthly View</a>
+        </div>
     </div>
-    <div>
-        <span>Hello, {{ request.user.username }}</span>
-        <span><a href="{% url 'logout' %}">Logout</a></span>
+
+    <!-- Daily View Tab Content -->
+    <div class="tab-content" id="daily-view">
+        <div class="navigation-buttons">
+            <a href="?view_type=daily&date={{ prev_day|date:'Y-m-d' }}">Previous Day</a>
+            <span>{{ selected_date|date:"l, F j, Y" }}</span>
+            <a href="?view_type=daily&date={{ next_day|date:'Y-m-d' }}">Next Day</a>
+        </div>
+
+        <div class="date-picker">
+            <form method="get">
+                <input type="date" name="date" value="{{ selected_date|date:'Y-m-d' }}">
+                <input type="hidden" name="view_type" value="daily">
+                <button type="submit">Go</button>
+            </form>
+        </div>
+
+        <div class="timeline-container">
+            <div class="time-labels">
+                {% for hour in hours_list %}
+                <div class="time-label">
+                    <span>{{ hour }}</span>
+                </div>
+                {% endfor %}
+            </div>
+            <div class="timeline">
+                {% for event in events %}
+                <div class="event {% if event.type == 'appointment' %}appointment{% else %}availability{% endif %}"
+                     style="top: {{ event.top_position }}px; height: {{ event.height }}px;">
+                    <div class="time">
+                        <strong>{{ event.start_time|time:"H:i" }} - {{ event.end_time|time:"H:i" }}</strong>
+                    </div>
+                    <div class="details">
+                        {% if event.type == 'appointment' %}
+                            <div class="customer-info">
+                                <strong>Customer:</strong> {{ event.customer }}<br>
+                                <strong>Services:</strong> {% for service in event.services %}{{ service }}{% if not forloop.last %}, {% endif %}{% endfor %}
+                            </div>
+                        {% else %}
+                            <strong>Status:</strong> Available
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
     </div>
 </body>
 </html>
