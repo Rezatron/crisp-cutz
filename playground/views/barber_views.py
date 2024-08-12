@@ -54,70 +54,149 @@ def barber_dashboard(request):
 
 
 
+@login_required
+def barber_appointments(request):
+    barber = request.user.barber
+    today = timezone.now().date()
+    date = request.GET.get('date')
+    
+    if date:
+        try:
+            selected_date = datetime.strptime(date, "%Y-%m-%d").date()
+        except ValueError:
+            selected_date = today
+    else:
+        selected_date = today
+
+    # Fetch appointments and availability for the selected date
+    appointments = Appointment.objects.filter(
+        barber=barber, date_time__date=selected_date
+    ).order_by('date_time')
+
+    availability = Availability.objects.filter(
+        barber=barber, start_time__date=selected_date
+    ).order_by('start_time')
+
+    # Prepare hourly slots
+    hourly_slots = {time(hour=h): {'appointments': [], 'availability': True} for h in range(8, 16)}
+
+    # Populate slots with appointments and availability
+    for appointment in appointments:
+        hour_start = appointment.date_time.time().replace(minute=0, second=0, microsecond=0)
+        if hour_start in hourly_slots:
+            hourly_slots[hour_start]['appointments'].append({
+                'start_time': appointment.date_time,
+                'end_time': appointment.end_time,  # Use end_time from the database
+                'customer': appointment.user.username,
+                'services': appointment.services.all()
+            })
+            hourly_slots[hour_start]['availability'] = False
+
+    for avail in availability:
+        hour_start = avail.start_time.time().replace(minute=0, second=0, microsecond=0)
+        if hour_start in hourly_slots:
+            hourly_slots[hour_start]['availability'] = avail.is_available
+
+    # Calculate previous and next days
+    prev_day = selected_date - timedelta(days=1)
+    next_day = selected_date + timedelta(days=1)
+
+    return render(request, 'barber_templates/barber_appointments.html', {
+        'view_type': 'daily',
+        'schedule_by_day': {
+            selected_date: hourly_slots
+        },
+        'selected_date': selected_date,
+        'prev_day': prev_day,
+        'next_day': next_day
+    })
 
 
 
 
 @login_required
-def barber_appointments(request):
+def monthly_appointments(request, view_type='daily', date=None, month=None, year=None):
     barber = request.user.barber
     today = timezone.now().date()
 
-    # Fetch appointments for today and the next 4 days
-    appointments = Appointment.objects.filter(
-        barber=barber, date_time__date__gte=today
-    ).order_by('date_time')
-    
-    # Fetch availability data for today and the next 4 days
-    availability = Availability.objects.filter(
-        barber=barber, start_time__date__gte=today
-    ).order_by('start_time')
+    if view_type == 'daily':
+        if date:
+            try:
+                selected_date = datetime.strptime(date, "%Y-%m-%d").date()
+            except ValueError:
+                selected_date = today
+        else:
+            selected_date = today
 
-    # Prepare the schedule for the next 5 days
-    days_to_show = [today + timedelta(days=i) for i in range(5)]
-    schedule_by_day = OrderedDict()
+        appointments = Appointment.objects.filter(
+            barber=barber, date_time__date=selected_date
+        ).order_by('date_time')
 
-    for day in days_to_show:
-        day_start = datetime.combine(day, time(8, 0))
-        day_end = datetime.combine(day, time(16, 0))
+        availability = Availability.objects.filter(
+            barber=barber, start_time__date=selected_date
+        ).order_by('start_time')
+
+        day_start = datetime.combine(selected_date, time(8, 0))
+        day_end = datetime.combine(selected_date, time(16, 0))
         hourly_slots = OrderedDict()
 
         current_time = day_start
         while current_time < day_end:
             hourly_slots[current_time.time()] = {
                 'appointments': [],
-                'availability': True  # Default to available
+                'availability': True
             }
             current_time += timedelta(hours=1)
 
-        schedule_by_day[day] = hourly_slots
-
-    # Add appointments to the schedule
-    for appointment in appointments:
-        day = appointment.date_time.date()
-        if day in schedule_by_day:
+        for appointment in appointments:
             hour_start = appointment.date_time.time().replace(minute=0, second=0, microsecond=0)
-            if hour_start in schedule_by_day[day]:
-                schedule_by_day[day][hour_start]['appointments'].append(appointment)
+            if hour_start in hourly_slots:
+                hourly_slots[hour_start]['appointments'].append(appointment)
 
-    # Update availability in the schedule
-    for avail in availability:
-        day = avail.start_time.date()
-        hour_start = avail.start_time.time().replace(minute=0, second=0, microsecond=0)
-        if day in schedule_by_day and hour_start in schedule_by_day[day]:
-            schedule_by_day[day][hour_start]['availability'] = avail.is_available
+        for avail in availability:
+            hour_start = avail.start_time.time().replace(minute=0, second=0, microsecond=0)
+            if hour_start in hourly_slots:
+                hourly_slots[hour_start]['availability'] = avail.is_available
 
-    return render(request, 'barber_templates/barber_appointments.html', {
-        'schedule_by_day': schedule_by_day,
-    })
+        prev_day = selected_date - timedelta(days=1)
+        next_day = selected_date + timedelta(days=1)
 
+        return render(request, 'barber_templates/barber_appointments.html', {
+            'view_type': 'daily',
+            'schedule_by_day': {
+                selected_date: hourly_slots
+            },
+            'selected_date': selected_date,
+            'prev_day': prev_day,
+            'next_day': next_day
+        })
 
+    elif view_type == 'monthly':
+        if not month or not year:
+            month = today.month
+            year = today.year
 
+        first_day = datetime(year, month, 1)
+        last_day = datetime(year, month + 1, 1) - timedelta(days=1)
 
+        appointments = Appointment.objects.filter(
+            barber=barber, date_time__date__range=(first_day.date(), last_day.date())
+        ).order_by('date_time')
 
+        availability = Availability.objects.filter(
+            barber=barber, start_time__date__range=(first_day.date(), last_day.date())
+        ).order_by('start_time')
 
+        days = [first_day + timedelta(days=i) for i in range((last_day - first_day).days + 1)]
 
-
+        return render(request, 'barber_templates/barber_appointments.html', {
+            'view_type': 'monthly',
+            'days': days,
+            'appointments': appointments,
+            'availability': availability,
+            'month': month,
+            'year': year
+        })
 
 
 
