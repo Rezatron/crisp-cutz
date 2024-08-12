@@ -53,7 +53,6 @@ def barber_dashboard(request):
 
 
 
-
 @login_required
 def barber_appointments(request):
     barber = request.user.barber
@@ -77,25 +76,59 @@ def barber_appointments(request):
         barber=barber, start_time__date=selected_date
     ).order_by('start_time')
 
-    # Prepare hourly slots
-    hourly_slots = {time(hour=h): {'appointments': [], 'availability': True} for h in range(8, 16)}
+    # Determine the earliest start and latest end times
+    if appointments.exists() or availability.exists():
+        earliest_start = min(
+            [a.date_time for a in appointments] + [a.start_time for a in availability]
+        )
+        latest_end = max(
+            [a.end_time for a in appointments] + [a.end_time for a in availability]
+        )
+    else:
+        earliest_start = datetime.combine(selected_date, time(8, 0))  # Default to 08:00
+        latest_end = datetime.combine(selected_date, time(16, 0))  # Default to 16:00
 
-    # Populate slots with appointments and availability
+    # Create a combined list of events, both appointments and availability
+    events = []
+
+    # Helper function to convert time to pixel position
+    def time_to_position(time, start_time):
+        hour_diff = (time - start_time).total_seconds() // 3600
+        minute_diff = ((time - start_time).total_seconds() % 3600) / 60
+        return hour_diff * 60 + minute_diff  # 1 hour = 60px
+    
+    start_of_day = earliest_start.replace(minute=0, second=0, microsecond=0)
+    end_of_day = latest_end.replace(minute=0, second=0, microsecond=0)
+
     for appointment in appointments:
-        hour_start = appointment.date_time.time().replace(minute=0, second=0, microsecond=0)
-        if hour_start in hourly_slots:
-            hourly_slots[hour_start]['appointments'].append({
-                'start_time': appointment.date_time,
-                'end_time': appointment.end_time,  # Use end_time from the database
-                'customer': appointment.user.username,
-                'services': appointment.services.all()
-            })
-            hourly_slots[hour_start]['availability'] = False
-
+        start_position = time_to_position(appointment.date_time, start_of_day)
+        end_position = time_to_position(appointment.end_time, start_of_day)
+        events.append({
+            'type': 'appointment',
+            'start_time': appointment.date_time,
+            'end_time': appointment.end_time,
+            'customer': appointment.user.username,
+            'services': appointment.services.all(),
+            'top_position': start_position,
+            'height': end_position - start_position
+        })
+    
     for avail in availability:
-        hour_start = avail.start_time.time().replace(minute=0, second=0, microsecond=0)
-        if hour_start in hourly_slots:
-            hourly_slots[hour_start]['availability'] = avail.is_available
+        start_position = time_to_position(avail.start_time, start_of_day)
+        end_position = time_to_position(avail.end_time, start_of_day)
+        events.append({
+            'type': 'availability',
+            'start_time': avail.start_time,
+            'end_time': avail.end_time,
+            'top_position': start_position,
+            'height': end_position - start_position
+        })
+
+    events.sort(key=lambda x: x['start_time'])
+
+    # Generate time slots for the timeline based on the dynamic range
+    total_hours = int((end_of_day - start_of_day).total_seconds() // 3600) + 1
+    hours_list = [(start_of_day + timedelta(hours=i)).strftime('%H:%M') for i in range(total_hours)]
 
     # Calculate previous and next days
     prev_day = selected_date - timedelta(days=1)
@@ -103,13 +136,14 @@ def barber_appointments(request):
 
     return render(request, 'barber_templates/barber_appointments.html', {
         'view_type': 'daily',
-        'schedule_by_day': {
-            selected_date: hourly_slots
-        },
+        'events': events,
         'selected_date': selected_date,
         'prev_day': prev_day,
-        'next_day': next_day
+        'next_day': next_day,
+        'hours_list': hours_list
     })
+
+
 
 
 
