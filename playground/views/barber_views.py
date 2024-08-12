@@ -13,6 +13,9 @@ from ..forms import BarberRegistrationForm, BarberLoginForm, BarberUpdateForm, A
 from ..models import Appointment, Barber, Availability, Service, BarberService
 from .common_views import address_to_coordinates
 from django.contrib.auth.decorators import login_required
+import logging
+
+logger = logging.getLogger(__name__)
 
 def barber_register(request):
     if request.method == 'POST':
@@ -295,7 +298,6 @@ def barber_settings(request):
 
 
 
-
 @login_required
 def manage_availability(request):
     barber = request.user.barber
@@ -304,6 +306,11 @@ def manage_availability(request):
         if availability_form.is_valid():
             availability = availability_form.save(commit=False)
             availability.barber = barber
+
+            # Ensure timezone-awareness before saving
+            availability.start_time = timezone.make_aware(availability.start_time)
+            availability.end_time = timezone.make_aware(availability.end_time)
+
             availability.save()
             messages.success(request, 'Availability updated successfully!')
             return redirect('manage_availability')
@@ -311,8 +318,13 @@ def manage_availability(request):
             messages.error(request, 'Please correct the errors below.')
     else:
         availability_form = AvailabilityForm()
+    
     availabilities = barber.availabilities.all()
-    return render(request, 'barber_templates/manage_availability.html', {'availability_form': availability_form, 'availabilities': availabilities})
+    return render(request, 'barber_templates/manage_availability.html', {
+        'availability_form': availability_form, 
+        'availabilities': availabilities
+    })
+
 
 @login_required
 def get_availability(request):
@@ -333,12 +345,18 @@ def set_availability(request):
     if request.method == 'POST':
         try:
             data = json.loads(request.body)
-            start_time = data['start_time']
-            end_time = data['end_time']
+            logger.debug(f"Received data: {data}")
+            start_time_str = data.get('start_time')
+            end_time_str = data.get('end_time')
             barber = request.user.barber
 
-            start_datetime = timezone.make_aware(datetime.datetime.fromisoformat(start_time))
-            end_datetime = timezone.make_aware(datetime.datetime.fromisoformat(end_time))
+            # Parse the start and end time using correct format
+            start_datetime = datetime.fromisoformat(start_time_str)
+            end_datetime = datetime.fromisoformat(end_time_str)
+
+            # Convert to timezone-aware datetime objects
+            start_datetime = timezone.make_aware(start_datetime)
+            end_datetime = timezone.make_aware(end_datetime)
 
             availability, created = Availability.objects.update_or_create(
                 barber=barber,
@@ -357,6 +375,7 @@ def set_availability(request):
             return JsonResponse({'status': 'error', 'message': f'Invalid date format: {e}'}, status=400)
         except Exception as e:
             return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+
 
 @login_required
 def delete_availability(request):

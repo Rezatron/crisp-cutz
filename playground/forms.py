@@ -10,11 +10,12 @@ from django.core.exceptions import ValidationError
 from .views.common_views import address_to_coordinates
 from django.conf import settings
 from playground.models import BarberService
-from datetime import timedelta
+from datetime import datetime, timedelta, time
+
 from django.forms import modelformset_factory
 from django import forms
 from .models import Appointment, Barber, Service
-from datetime import timedelta
+
 
 BarberServiceFormSet = modelformset_factory(
     BarberService,

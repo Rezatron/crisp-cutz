@@ -7,7 +7,8 @@ from django.conf import settings
 import requests
 import json
 from django.utils import timezone
-import datetime
+from datetime import datetime, timedelta, time
+
 
 from ..models import Appointment, Barber, Customer, Availability
 
