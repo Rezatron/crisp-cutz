@@ -14,12 +14,14 @@
             margin: 0;
             padding: 0;
             font-family: Arial, sans-serif;
+            background: #f4f4f4;
         }
 
         /* Tab container */
         .tab {
             display: flex;
-            background-color: #f1f1f1;
+            background-color: #007bff;
+            color: white;
         }
 
         .tab button {
@@ -29,17 +31,21 @@
             padding: 14px 16px;
             cursor: pointer;
             font-size: 16px;
+            color: white;
             transition: 0.3s;
         }
 
         .tab button.active {
-            background-color: #ddd;
-            border-bottom: 2px solid #007bff;
+            background-color: #0056b3;
+            border-bottom: 2px solid #fff;
         }
 
         .tabcontent {
             display: none;
             padding: 20px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
         }
 
         .tabcontent.active {
@@ -57,10 +63,11 @@
 
         .day h4 {
             margin: 0;
-            font-size: 1.2em;
-            background: #e2e2e2;
-            padding: 5px;
-            border-radius: 5px;
+            font-size: 1.5em;
+            background: #007bff;
+            color: white;
+            padding: 10px;
+            border-radius: 8px;
         }
 
         .hourly-slot {
@@ -69,6 +76,7 @@
             margin: 5px 0;
             border-radius: 5px;
             background: #f9f9f9;
+            position: relative;
         }
 
         .hourly-slot.appointment {
@@ -83,6 +91,19 @@
             background: #f9f9f9;
             color: #999;
         }
+
+        .hourly-slot .status {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .hourly-slot .details {
+            font-size: 0.9em;
+        }
+
+        .hourly-slot .customer-info {
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
@@ -96,16 +117,24 @@
             <div class="day">
                 <h4>{{ day|date:"D, M d, Y" }}</h4>
                 {% for time, slot in slots.items %}
-                <div class="hourly-slot {% if slot.appointment %}appointment{% elif slot.availability %}availability{% else %}empty{% endif %}">
-                    <strong>{{ time|time:"H:i" }}</strong><br>
-                    {% if slot.appointment %}
-                        <strong>Customer:</strong> {{ slot.appointment.user.username }}<br>
-               
-                    {% elif slot.availability %}
-                        <strong>Status:</strong> Available
-                    {% else %}
-                        No appointment or availability
-                    {% endif %}
+                <div class="hourly-slot {% if slot.appointments %}appointment{% elif slot.availability %}availability{% else %}empty{% endif %}">
+                    <div class="status">
+                        <strong>{{ time|time:"H:i" }}</strong>
+                    </div>
+                    <div class="details">
+                        {% if slot.appointments %}
+                            {% for appointment in slot.appointments %}
+                                <div class="customer-info">
+                                    <strong>Customer:</strong> {{ appointment.user.username }}<br>
+                                    <strong>Time:</strong> {{ appointment.date_time|time:"H:i" }}<br>
+                                </div>
+                            {% endfor %}
+                        {% elif slot.availability %}
+                            <strong>Status:</strong> Available
+                        {% else %}
+                            No appointment or availability
+                        {% endif %}
+                    </div>
                 </div>
                 {% endfor %}
             </div>
@@ -115,7 +144,7 @@
 
     <div>
         <span>Hello, {{ request.user.username }}</span>
-        <span><a href="{% url 'logout_customer' %}">Logout</a></span>
+        <span><a href="{% url 'logout' %}">Logout</a></span>
     </div>
 
 </body>

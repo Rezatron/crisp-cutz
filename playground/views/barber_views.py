@@ -5,10 +5,10 @@ from django.http import HttpResponseRedirect, JsonResponse
 from django.utils import timezone
 from django.urls import reverse
 from django.forms import modelformset_factory
-import datetime
 import json
+from django.utils import timezone
 from collections import OrderedDict
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, time
 from ..forms import BarberRegistrationForm, BarberLoginForm, BarberUpdateForm, AvailabilityForm, BarberServiceForm, ServiceForm
 from ..models import Appointment, Barber, Availability, Service, BarberService
 from .common_views import address_to_coordinates
@@ -52,36 +52,47 @@ def barber_dashboard(request):
 
 
 
+
+
+
+
+
+
 @login_required
 def barber_appointments(request):
     barber = request.user.barber
     today = timezone.now().date()
-    appointments = Appointment.objects.filter(barber=barber, date_time__date__gte=today).order_by('date_time')
+
+    # Fetch appointments for today and the next 4 days
+    appointments = Appointment.objects.filter(
+        barber=barber, date_time__date__gte=today
+    ).order_by('date_time')
     
-    # Fetch availability data
-    availability = Availability.objects.filter(barber=barber, start_time__date__gte=today).order_by('start_time')
-    
-    # Prepare the data structure for 5 days starting from today
+    # Fetch availability data for today and the next 4 days
+    availability = Availability.objects.filter(
+        barber=barber, start_time__date__gte=today
+    ).order_by('start_time')
+
+    # Prepare the schedule for the next 5 days
     days_to_show = [today + timedelta(days=i) for i in range(5)]
     schedule_by_day = OrderedDict()
 
     for day in days_to_show:
-        day_start = datetime.combine(day, datetime.time(8, 0))
-        day_end = datetime.combine(day, datetime.time(16, 0))
+        day_start = datetime.combine(day, time(8, 0))
+        day_end = datetime.combine(day, time(16, 0))
         hourly_slots = OrderedDict()
 
-        # Generate hourly slots from 8:00 to 16:00
         current_time = day_start
         while current_time < day_end:
             hourly_slots[current_time.time()] = {
                 'appointments': [],
                 'availability': True  # Default to available
             }
-            current_time += timedelta(hours=1)  # Move to next hour
+            current_time += timedelta(hours=1)
 
         schedule_by_day[day] = hourly_slots
 
-    # Fill in the appointments and availability in the schedule
+    # Add appointments to the schedule
     for appointment in appointments:
         day = appointment.date_time.date()
         if day in schedule_by_day:
@@ -89,6 +100,7 @@ def barber_appointments(request):
             if hour_start in schedule_by_day[day]:
                 schedule_by_day[day][hour_start]['appointments'].append(appointment)
 
+    # Update availability in the schedule
     for avail in availability:
         day = avail.start_time.date()
         hour_start = avail.start_time.time().replace(minute=0, second=0, microsecond=0)
@@ -98,6 +110,13 @@ def barber_appointments(request):
     return render(request, 'barber_templates/barber_appointments.html', {
         'schedule_by_day': schedule_by_day,
     })
+
+
+
+
+
+
+
 
 
 
@@ -139,6 +158,15 @@ def update_barber(request):
         form = BarberUpdateForm(instance=barber)
     return render(request, 'barber_templates/barber_profile.html', {'form': form})
 
+
+
+
+
+
+
+
+
+
 @login_required
 def barber_settings(request):
     barber = request.user.barber
@@ -151,6 +179,9 @@ def barber_settings(request):
     else:
         form = BarberUpdateForm(instance=barber)
     return render(request, 'barber_templates/barber_settings.html', {'form': form})
+
+
+
 
 @login_required
 def manage_availability(request):
