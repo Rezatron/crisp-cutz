@@ -8,7 +8,7 @@ from django.forms import modelformset_factory
 import datetime
 import json
 from collections import OrderedDict
-
+from datetime import datetime, timedelta
 from ..forms import BarberRegistrationForm, BarberLoginForm, BarberUpdateForm, AvailabilityForm, BarberServiceForm, ServiceForm
 from ..models import Appointment, Barber, Availability, Service, BarberService
 from .common_views import address_to_coordinates
@@ -62,22 +62,22 @@ def barber_appointments(request):
     availability = Availability.objects.filter(barber=barber, start_time__date__gte=today).order_by('start_time')
     
     # Prepare the data structure for 5 days starting from today
-    days_to_show = [today + datetime.timedelta(days=i) for i in range(5)]
+    days_to_show = [today + timedelta(days=i) for i in range(5)]
     schedule_by_day = OrderedDict()
 
     for day in days_to_show:
-        day_start = datetime.datetime.combine(day, datetime.time(8, 0))
-        day_end = datetime.datetime.combine(day, datetime.time(16, 0))
+        day_start = datetime.combine(day, datetime.time(8, 0))
+        day_end = datetime.combine(day, datetime.time(16, 0))
         hourly_slots = OrderedDict()
 
         # Generate hourly slots from 8:00 to 16:00
         current_time = day_start
         while current_time < day_end:
             hourly_slots[current_time.time()] = {
-                'appointment': None,
-                'availability': True  # Set availability to True by default
+                'appointments': [],
+                'availability': True  # Default to available
             }
-            current_time += datetime.timedelta(hours=1)
+            current_time += timedelta(hours=1)  # Move to next hour
 
         schedule_by_day[day] = hourly_slots
 
@@ -85,18 +85,19 @@ def barber_appointments(request):
     for appointment in appointments:
         day = appointment.date_time.date()
         if day in schedule_by_day:
-            schedule_by_day[day][appointment.date_time.time()]['appointment'] = appointment
+            hour_start = appointment.date_time.time().replace(minute=0, second=0, microsecond=0)
+            if hour_start in schedule_by_day[day]:
+                schedule_by_day[day][hour_start]['appointments'].append(appointment)
 
     for avail in availability:
         day = avail.start_time.date()
-        start_hour = avail.start_time.time().replace(minute=0, second=0, microsecond=0)
-        if day in schedule_by_day and start_hour in schedule_by_day[day]:
-            schedule_by_day[day][start_hour]['availability'] = avail.is_available
+        hour_start = avail.start_time.time().replace(minute=0, second=0, microsecond=0)
+        if day in schedule_by_day and hour_start in schedule_by_day[day]:
+            schedule_by_day[day][hour_start]['availability'] = avail.is_available
 
     return render(request, 'barber_templates/barber_appointments.html', {
         'schedule_by_day': schedule_by_day,
     })
-
 
 
 
@@ -284,10 +285,56 @@ def create_service(request):
             return redirect('manage_services')
     else:
         service_form = ServiceForm()
-    return render(request, 'barber_templates/create_service.html', {'service_form': service_form})
+    return render(request, 'barber_templates/manage_service.html', {'service_form': service_form})
 
 @login_required
 def manage_services(request):
     barber = request.user.barber
-    services = barber.services.all()
-    return render(request, 'barber_templates/manage_services.html', {'services': services})
+
+    selected_service_id = request.GET.get('service_id')
+
+    if request.method == 'POST':
+        if 'create_service' in request.POST:
+            # Handle the creation of a new service
+            service_form = ServiceForm(request.POST)
+            if service_form.is_valid():
+                service = service_form.save()
+                BarberService.objects.create(
+                    barber=barber,
+                    service=service,
+                    price=service.price,
+                    duration=service.duration
+                )
+                messages.success(request, 'Service created successfully!')
+                return redirect('manage_services')
+
+        elif 'edit_service' in request.POST:
+            # Handle editing of an existing service
+            barber_service = get_object_or_404(BarberService, pk=request.POST['edit_service_id'], barber=barber)
+            service_form = ServiceForm(request.POST, instance=barber_service.service)
+            
+            if service_form.is_valid():
+                # Save changes to the Service model
+                updated_service = service_form.save()
+                
+                # Update the BarberService model if needed (usually not required if prices/durations are updated in Service model)
+                barber_service.price = updated_service.price
+                barber_service.duration = updated_service.duration
+                barber_service.save()
+                
+                messages.success(request, 'Service updated successfully!')
+                return redirect('manage_services')
+
+    # If GET request, prefill the form if a service ID is provided
+    if selected_service_id:
+        barber_service = get_object_or_404(BarberService, pk=selected_service_id, barber=barber)
+        form = ServiceForm(instance=barber_service.service)
+    else:
+        form = ServiceForm()
+
+    # Render the template with the forms
+    return render(request, 'barber_templates/manage_services.html', {
+        'form': form,
+        'service_form': ServiceForm(),
+        'services': BarberService.objects.filter(barber=barber)
+    })

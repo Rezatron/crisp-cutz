@@ -73,29 +73,27 @@
     <span>Hello, {{ request.user }}</span>
     <span><a href="{% url 'logout_customer' %}">Logout</a></span>
 
-    <div id="manage-services">
-        <button id="manage-services-button" class="btn-primary">Manage Services</button>
-        <button id="create-service-button" class="btn-primary">Create Service</button>
+    <div id="service-list">
+        <h4>Your Services:</h4>
+        <ul>
+            {% for service in services %}
+                <li>
+                    <a href="#" class="edit-service-link" data-service-id="{{ service.pk }}" data-price="{{ service.price }}" data-duration="{{ service.duration }}" data-name="{{ service.service.name }}">{{ service.service.name }}</a>
+                </li>
+            {% endfor %}
+        </ul>
     </div>
 
-    <!-- Manage Services Modal -->
-    <div id="manage-services-modal" class="modal">
+    <!-- Manage Service Modal -->
+    <div id="manage-service-modal" class="modal">
         <div class="modal-content">
             <span class="close">&times;</span>
+            <h4>Edit Service</h4>
             <form method="post" action="{% url 'manage_services' %}">
                 {% csrf_token %}
-                {{ formset.management_form.as_p }}
-                {% if formset %}
-                    {% for form in formset %}
-                        <div class="service-form">
-                            {{ form.as_p }}
-                        </div>
-                    {% endfor %}
-                {% else %}
-                    <p>No services to manage.</p>
-                {% endif %}
-                
-                <button type="submit" class="btn-primary">Update Services</button>
+                {{ form.as_p }}
+                <input type="hidden" name="edit_service_id" id="edit-service-id">
+                <button type="submit" name="edit_service" class="btn-primary">Update Service</button>
             </form>
         </div>
     </div>
@@ -104,47 +102,75 @@
     <div id="create-service-modal" class="modal">
         <div class="modal-content">
             <span class="close">&times;</span>
-            <form method="post" action="{% url 'create_service' %}">
+            <h4>Create New Service</h4>
+            <form method="post" action="{% url 'manage_services' %}">
                 {% csrf_token %}
                 {{ service_form.as_p }}
-
-                <button type="submit" class="btn-primary">Create Service</button>
+                <button type="submit" name="create_service" class="btn-primary">Create Service</button>
             </form>
         </div>
     </div>
 
-    <script src="{% static 'scripts.js' %}"></script>
+    <!-- Buttons to Trigger Modals -->
+    <div id="manage-services">
+        <button id="create-service-button" class="btn-primary">Create New Service</button>
+    </div>
+
+    <!-- JavaScript for Modal Functionality -->
     <script>
-        // JavaScript for modal functionality
-        var manageModal = document.getElementById("manage-services-modal");
-        var createModal = document.getElementById("create-service-modal");
-        var manageBtn = document.getElementById("manage-services-button");
+        // Get modal elements
+        var manageServiceModal = document.getElementById("manage-service-modal");
+        var createServiceModal = document.getElementById("create-service-modal");
+
+        // Get button elements
         var createBtn = document.getElementById("create-service-button");
+
+        // Get the close buttons
         var closeButtons = document.getElementsByClassName("close");
 
-        manageBtn.onclick = function() {
-            manageModal.style.display = "block";
-        }
+        // Open the manage service modal when a service link is clicked
+        document.querySelectorAll('.edit-service-link').forEach(function(link) {
+            link.onclick = function(event) {
+                event.preventDefault();
+                var serviceId = this.getAttribute("data-service-id");
+                var name = this.getAttribute("data-name");
+                var price = this.getAttribute("data-price");
+                var duration = this.getAttribute("data-duration");
 
+                // Set the form fields with the service data
+                document.getElementById("edit-service-id").value = serviceId;
+                document.querySelector('input[name="name"]').value = name;
+                document.querySelector('input[name="price"]').value = price;
+                document.querySelector('input[name="duration"]').value = duration;
+
+                manageServiceModal.style.display = "block";
+            };
+        });
+
+        // Open the create service modal
         createBtn.onclick = function() {
-            createModal.style.display = "block";
-        }
+            createServiceModal.style.display = "block";
+        };
 
+        // Close modals when the close button is clicked
         for (var i = 0; i < closeButtons.length; i++) {
             closeButtons[i].onclick = function() {
-                manageModal.style.display = "none";
-                createModal.style.display = "none";
-            }
+                manageServiceModal.style.display = "none";
+                createServiceModal.style.display = "none";
+            };
         }
 
+        // Close modals if the user clicks outside of them
         window.onclick = function(event) {
-            if (event.target == manageModal) {
-                manageModal.style.display = "none";
+            if (event.target == manageServiceModal) {
+                manageServiceModal.style.display = "none";
             }
-            if (event.target == createModal) {
-                createModal.style.display = "none";
+            if (event.target == createServiceModal) {
+                createServiceModal.style.display = "none";
             }
         }
     </script>
+
+
 </body>
 </html>

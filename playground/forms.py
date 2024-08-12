@@ -5,6 +5,7 @@ from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
 from .models import Barber, Customer, Availability, Appointment, Service, AppointmentService, BarberService
 from django.contrib.auth.models import User
 from django.contrib.auth import authenticate, get_user_model
+
 from django.core.exceptions import ValidationError
 from .views.common_views import address_to_coordinates
 from django.conf import settings
@@ -209,36 +210,37 @@ class AppointmentForm(forms.ModelForm):
             self.fields['services'].queryset = Service.objects.none()
 
 
+
+
 class BarberServiceForm(forms.ModelForm):
     class Meta:
         model = BarberService
-        fields = ['service', 'price', 'duration']
-        widgets = {
-            'duration': forms.TextInput(attrs={'type': 'text', 'placeholder': 'Duration in HH:MM:SS'}),
-        }
+        fields = ['price', 'duration']
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        # Populate the service field with all existing Service instances
-        self.fields['service'].queryset = Service.objects.all()
-    
     def clean(self):
         cleaned_data = super().clean()
-        price = cleaned_data.get('price')
         duration = cleaned_data.get('duration')
 
-        if price is not None and price <= 0:
-            self.add_error('price', 'Price must be greater than 0.')
-
-        if duration:
+        if isinstance(duration, str):
+            # Assuming the duration is provided as a string in HH:MM:SS format
             try:
-                duration_obj = timedelta(hours=int(duration.split(':')[0]), minutes=int(duration.split(':')[1]), seconds=int(duration.split(':')[2]))
-                if duration_obj <= timedelta():
-                    self.add_error('duration', 'Duration must be greater than 0.')
+                duration_obj = timedelta(
+                    hours=int(duration.split(':')[0]),
+                    minutes=int(duration.split(':')[1]),
+                    seconds=int(duration.split(':')[2])
+                )
             except (ValueError, IndexError):
-                self.add_error('duration', 'Invalid duration format. Use HH:MM:SS.')
+                raise forms.ValidationError("Invalid duration format. It should be HH:MM:SS.")
+        elif isinstance(duration, timedelta):
+            # If the duration is already a timedelta object
+            duration_obj = duration
+        else:
+            raise forms.ValidationError("Invalid duration format.")
 
+        # Set the cleaned duration back to cleaned_data
+        cleaned_data['duration'] = duration_obj
         return cleaned_data
+
 
 class ServiceForm(forms.ModelForm):
     class Meta:
