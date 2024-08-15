@@ -11,7 +11,6 @@ from django.http import HttpResponse
 
 
 logger = logging.getLogger('playground')
-
 @login_required
 def create_appointment(request, barber_id=None):
     barber = get_object_or_404(Barber, id=barber_id) if barber_id else None
@@ -30,14 +29,18 @@ def create_appointment(request, barber_id=None):
             logger.debug(f"Creating appointment with barber ID: {appointment.barber.id}")
             logger.debug(f"Selected Service IDs: {selected_service_ids}")
 
-            # Calculate total duration from BarberService
+            # Calculate total duration and price from BarberService
             total_duration = timedelta()
+            total_price = 0
             for service in barber_services:
                 duration = service.duration
-                logger.debug(f"BarberService ID: {service.id}, Duration: {duration} (Type: {type(duration)})")
+                price = service.price
+                logger.debug(f"BarberService ID: {service.id}, Duration: {duration} (Type: {type(duration)}), Price: {price}")
                 total_duration += duration
+                total_price += price
 
             logger.debug(f"Total Duration from BarberService: {total_duration}")
+            logger.debug(f"Total Price from BarberService: {total_price}")
 
             # Set end_time based on total_duration
             if total_duration:
@@ -65,7 +68,8 @@ def create_appointment(request, barber_id=None):
                     'date_time': appointment.date_time.strftime("%B %d, %Y %I:%M %p"),
                     'end_time': appointment.end_time.strftime("%I:%M %p"),
                     'location': appointment.barber.location,
-                    'services': [service.name for service in appointment.services.all()]
+                    'services': [service.name for service in appointment.services.all()],
+                    'total_price': total_price
                 }
             })
         else:
