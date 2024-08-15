@@ -10,26 +10,160 @@
     <script src='https://cdn.jsdelivr.net/npm/fullcalendar@5.11.0/main.min.js'></script>
     <script src='https://cdn.jsdelivr.net/npm/fullcalendar@5.11.0/locales-all.min.js'></script>
     <style>
-        /* Your custom styles for the monthly view */
+        body {
+            font-size: 16px;
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+            background: #f4f4f4;
+        }
+        .tabs {
+            display: flex;
+            cursor: pointer;
+            margin: 20px;
+        }
+        .tab {
+            flex: 1;
+            padding: 10px;
+            text-align: center;
+            background: #ddd;
+            border: 1px solid #ccc;
+            border-bottom: none;
+            margin-right: -1px;
+        }
+        .tab.active {
+            background: white;
+            font-weight: bold;
+        }
+        .tab-content {
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-top: none;
+            background: white;
+        }
+        .calendar-container, .timeline-container {
+            margin: 20px;
+        }
+        .calendar-header {
+            margin-bottom: 10px;
+            text-align: right;
+        }
+        .calendar-header button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .calendar-header button:hover {
+            background: #0056b3;
+        }
+        .timeline-container {
+            display: flex;
+        }
+        .time-labels {
+            flex: 0 0 60px;
+            padding-right: 10px;
+        }
+        .time-label {
+            height: 60px;
+            position: relative;
+            border-bottom: 1px solid #ccc;
+        }
+        .time-label span {
+            position: absolute;
+            top: -10px;
+            right: 10px;
+            font-size: 0.9em;
+            color: #666;
+        }
+        .timeline {
+            flex: 1;
+            position: relative;
+        }
+        .event {
+            position: absolute;
+            left: 0;
+            right: 0;
+            padding: 10px;
+            background: #e9ecef;
+            border-radius: 5px;
+            margin: 2px 0;
+            box-sizing: border-box;
+        }
+        .event.appointment {
+            background: #f8d7da;
+        }
+        .event.availability {
+            background: #d4edda;
+        }
+        .event .time {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .event .details {
+            font-size: 0.9em;
+        }
+        .event .customer-info {
+            font-weight: bold;
+        }
+        .event .service-info {
+            font-style: italic;
+        }
+        .navigation-buttons {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+        .navigation-buttons a {
+            text-decoration: none;
+            color: #007bff;
+        }
+        .navigation-buttons a:hover {
+            text-decoration: underline;
+        }
+        .date-picker {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+        .date-picker input {
+            padding: 10px;
+            font-size: 16px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
     </style>
 </head>
 <body>
-        <div class="tab">
-        <button class="tablinks" onclick="location.href='{% url 'barber_dashboard' %}'">Dashboard</button>
-        <button class="tablinks" onclick="location.href='{% url 'barber_appointments' %}'">Appointments</button>
-        <button class="tablinks" onclick="location.href='{% url 'barber_monthly_appointments' %}'">Monthly Appointments</button>
-        <button class="tablinks" onclick="location.href='{% url 'barber_reports' %}'">Reports</button>
-        <button class="tablinks" onclick="location.href='{% url 'barber_profile' %}'">Profile</button>
-        <button class="tablinks" onclick="location.href='{% url 'barber_settings' %}'">Settings</button>
+    <div class="tab">
+        <a href="{% url 'barber_dashboard' %}" class="tablinks">Dashboard</a>
+        <a href="{% url 'barber_appointments' %}" class="tablinks">My Appointments</a>
+        <a href="{% url 'barber_reports' %}" class="tablinks">Reports</a>
+        <a href="{% url 'barber_profile' %}" class="tablinks">Profile</a>
+        <a href="{% url 'barber_settings' %}" class="tablinks">Settings</a>
     </div>
 
-</body>
-<body>
-    <div class="calendar-header">
-        <a href="?view_type=monthly&date={{ selected_date|date:'Y-m-d' }}"><button>Today</button></a>
+    <div class="tabs">
+        <div class="tab active" data-tab="monthly">
+            <a href="{% url 'barber_monthly_appointments' %}">Monthly View</a>
+        </div>
+        <div class="tab" data-tab="daily">
+            <a href="{% url 'barber_appointments' %}">Daily View</a>
+        </div>
     </div>
+
     <div class="calendar-container">
         <div id="calendar-month"></div>
+    </div>
+
+    <!-- The Modal -->
+    <div id="eventModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <div id="modalContent"></div>
+        </div>
     </div>
 
     <script>
@@ -38,25 +172,64 @@
             if (calendarEl) {
                 var events = {{ events|safe }};  // Ensure events are correctly passed as JSON
                 var calendar = new FullCalendar.Calendar(calendarEl, {
-                    initialView: 'dayGridMonth',
+                    initialView: 'dayGridMonth',  // Set initial view to monthly
                     locale: 'en',
                     events: events,
-                    editable: true,
+                    editable: false,  // Disable dragging
+                    eventOverlap: false,  // Prevent events from overlapping
                     headerToolbar: {
                         left: 'prev,next today',
                         center: 'title',
-                        right: 'dayGridMonth,timeGridWeek,timeGridDay'
+                        right: 'dayGridMonth'  // Only show the month view button
                     },
                     buttonText: {
                         today: 'Today',
-                        month: 'Month',
-                        week: 'Week',
-                        day: 'Day'
+                        month: 'Month'
+                    },
+                    eventMinHeight: 20,  // Set minimum event height to make small events more clickable
+                    eventContent: function(arg) {
+                        let event = arg.event;
+                        return {
+                            html: `<div style="color: ${event.textColor}; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                                    <span>${event.startStr.slice(11, 16)} ${event.title}</span>
+                                </div>`
+                        };
+                    },
+                    eventClick: function(info) {
+                        var modal = document.getElementById("eventModal");
+                        var modalContent = document.getElementById("modalContent");
+                        var startTime = info.event.start.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                        var endTime = info.event.end ? info.event.end.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'N/A';
+                        
+                        if (info.event.extendedProps.serviceName) {
+                            var serviceName = info.event.extendedProps.serviceName;
+                            modalContent.innerHTML = `<h2>${info.event.title}</h2>
+                                                    <p><strong>Start Time:</strong> ${startTime}</p>
+                                                    <p><strong>End Time:</strong> ${endTime}</p>
+                                                    <p><strong>Service:</strong> ${serviceName}</p>`;
+                        } else {
+                            modalContent.innerHTML = `<h2>${info.event.title}</h2>
+                                                    <p><strong>Start Time:</strong> ${startTime}</p>
+                                                    <p><strong>End Time:</strong> ${endTime}</p>`;
+                        }
+                        
+                        modal.style.display = "block";
                     }
                 });
                 calendar.render();
             }
+    
+            // Modal close handler
+            var modal = document.getElementById("eventModal");
+            var span = document.getElementsByClassName("close")[0];
+            span.onclick = function() {
+                modal.style.display = "none";
+            }
+            window.onclick = function(event) {
+                if (event.target == modal) {
+                    modal.style.display = "none";
+                }
+            }
         });
-    </script>
-</body>
+    </script></body>
 </html>

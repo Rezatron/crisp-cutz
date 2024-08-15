@@ -148,7 +148,6 @@ def barber_appointments(request):
         'hours_list': hours_list
     })
 
-
 @login_required
 def monthly_appointments(request):
     barber = request.user.barber
@@ -174,11 +173,14 @@ def monthly_appointments(request):
     events = []
 
     for appointment in appointments:
+        services = ', '.join([service.name for service in appointment.services.all()])
         events.append({
             'title': f"Appointment with {appointment.user.username}",
             'start': appointment.date_time.isoformat(),
             'end': appointment.end_time.isoformat(),
-            'color': '#f8d7da',
+            'color': '#f8d7da',  # Light red background
+            'textColor': '#dc3545',  # Red text for appointments
+            'serviceName': services,
         })
     
     for avail in availability:
@@ -186,7 +188,8 @@ def monthly_appointments(request):
             'title': 'Available',
             'start': avail.start_time.isoformat(),
             'end': avail.end_time.isoformat(),
-            'color': '#d4edda',
+            'color': '#d4edda',  # Light green background
+            'textColor': '#28a745',  # Green text for availability
         })
 
     return render(request, 'barber_templates/barber_monthly_appointments.html', {
@@ -195,7 +198,6 @@ def monthly_appointments(request):
         'selected_date': selected_date,
         'today': today
     })
-
 
 
 @login_required
