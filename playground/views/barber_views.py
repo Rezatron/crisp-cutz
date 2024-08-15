@@ -81,6 +81,10 @@ def barber_appointments(request):
         barber=barber, start_time__date=selected_date
     ).order_by('start_time')
 
+    # Debug: Print fetched data
+    print(f"Appointments on {selected_date}: {appointments}")
+    print(f"Availability on {selected_date}: {availability}")
+
     # Determine the earliest start and latest end times
     if appointments.exists() or availability.exists():
         earliest_start = min(
@@ -148,6 +152,7 @@ def barber_appointments(request):
         'hours_list': hours_list
     })
 
+
 @login_required
 def monthly_appointments(request):
     barber = request.user.barber
@@ -192,13 +197,31 @@ def monthly_appointments(request):
             'textColor': '#28a745',  # Green text for availability
         })
 
+    # Generate a list of all dates in the selected month
+    all_dates = [first_day_of_month + timedelta(days=i) for i in range((last_day_of_month - first_day_of_month).days + 1)]
+    
+    # Find dates without availability
+    availability_dates = set(avail.start_time.date() for avail in availability)
+    dates_without_availability = [date for date in all_dates if date not in availability_dates]
+
+    # Add events for dates without availability
+    for date in dates_without_availability:
+        events.append({
+            'title': 'No Availability',
+            'start': date.isoformat(),
+            'end': (date + timedelta(days=1)).isoformat(),
+            'color': '#e0e0e0',  # Light gray background
+            'textColor': '#a0a0a0',  # Dark gray text for no availability
+            'noAvailability': True,  # Custom property to identify no availability
+        })
+
     return render(request, 'barber_templates/barber_monthly_appointments.html', {
         'view_type': 'monthly',
         'events': json.dumps(events),  # Ensure events are passed as JSON
         'selected_date': selected_date,
-        'today': today
+        'today': today,
+        'dates_without_availability': dates_without_availability
     })
-
 
 @login_required
 def barber_reports(request):

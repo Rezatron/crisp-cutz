@@ -137,14 +137,6 @@
     </style>
 </head>
 <body>
-    <div class="tab">
-        <a href="{% url 'barber_dashboard' %}" class="tablinks">Dashboard</a>
-        <a href="{% url 'barber_appointments' %}" class="tablinks">My Appointments</a>
-        <a href="{% url 'barber_reports' %}" class="tablinks">Reports</a>
-        <a href="{% url 'barber_profile' %}" class="tablinks">Profile</a>
-        <a href="{% url 'barber_settings' %}" class="tablinks">Settings</a>
-    </div>
-
     <div class="tabs">
         <div class="tab active" data-tab="monthly">
             <a href="{% url 'barber_monthly_appointments' %}">Monthly View</a>
@@ -171,6 +163,32 @@
             var calendarEl = document.getElementById('calendar-month');
             if (calendarEl) {
                 var events = {{ events|safe }};  // Ensure events are correctly passed as JSON
+
+                // Function to fill empty days with "No Availability"
+                function fillEmptyDays(events, startDate, endDate) {
+                    let date = new Date(startDate);
+                    while (date <= endDate) {
+                        let dateStr = date.toISOString().split('T')[0];
+                        if (!events.some(event => event.start.split('T')[0] === dateStr)) {
+                            events.push({
+                                title: 'No Availability',
+                                start: dateStr,
+                                end: dateStr,
+                                allDay: true,
+                                textColor: 'red'
+                            });
+                        }
+                        date.setDate(date.getDate() + 1);
+                    }
+                }
+
+                // Get the start and end dates of the current month
+                var startDate = new Date(calendarEl.dataset.startDate);
+                var endDate = new Date(calendarEl.dataset.endDate);
+
+                // Fill empty days with "No Availability"
+                fillEmptyDays(events, startDate, endDate);
+
                 var calendar = new FullCalendar.Calendar(calendarEl, {
                     initialView: 'dayGridMonth',  // Set initial view to monthly
                     locale: 'en',
@@ -178,39 +196,44 @@
                     editable: false,  // Disable dragging
                     eventOverlap: false,  // Prevent events from overlapping
                     headerToolbar: {
-                        left: 'prev,next today',
+                        left: 'prev,next',
                         center: 'title',
-                        right: 'dayGridMonth'  // Only show the month view button
-                    },
-                    buttonText: {
-                        today: 'Today',
-                        month: 'Month'
+                        right: ''  // Remove today and month buttons
                     },
                     eventMinHeight: 20,  // Set minimum event height to make small events more clickable
                     eventContent: function(arg) {
                         let event = arg.event;
+                        let startTime = event.start.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                        let endTime = event.end ? event.end.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+                        let displayTime = event.title !== 'No Availability' ? `${startTime} ${endTime ? '- ' + endTime : ''}` : '';
                         return {
                             html: `<div style="color: ${event.textColor}; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-                                    <span>${event.startStr.slice(11, 16)} ${event.title}</span>
+                                    <span>${displayTime} ${event.title}</span>
                                 </div>`
                         };
                     },
                     eventClick: function(info) {
                         var modal = document.getElementById("eventModal");
                         var modalContent = document.getElementById("modalContent");
-                        var startTime = info.event.start.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                        var endTime = info.event.end ? info.event.end.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'N/A';
-                        
-                        if (info.event.extendedProps.serviceName) {
-                            var serviceName = info.event.extendedProps.serviceName;
+
+                        if (info.event.title === 'No Availability') {
                             modalContent.innerHTML = `<h2>${info.event.title}</h2>
-                                                    <p><strong>Start Time:</strong> ${startTime}</p>
-                                                    <p><strong>End Time:</strong> ${endTime}</p>
-                                                    <p><strong>Service:</strong> ${serviceName}</p>`;
+                                                      <p><a href="http://127.0.0.1:8000/register/barber/availability/">Manage Availability</a></p>`;
                         } else {
-                            modalContent.innerHTML = `<h2>${info.event.title}</h2>
-                                                    <p><strong>Start Time:</strong> ${startTime}</p>
-                                                    <p><strong>End Time:</strong> ${endTime}</p>`;
+                            var startTime = info.event.start.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                            var endTime = info.event.end ? info.event.end.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'N/A';
+                            
+                            if (info.event.extendedProps.serviceName) {
+                                var serviceName = info.event.extendedProps.serviceName;
+                                modalContent.innerHTML = `<h2>${info.event.title}</h2>
+                                                          <p><strong>Start Time:</strong> ${startTime}</p>
+                                                          <p><strong>End Time:</strong> ${endTime}</p>
+                                                          <p><strong>Service:</strong> ${serviceName}</p>`;
+                            } else {
+                                modalContent.innerHTML = `<h2>${info.event.title}</h2>
+                                                          <p><strong>Start Time:</strong> ${startTime}</p>
+                                                          <p><strong>End Time:</strong> ${endTime}</p>`;
+                            }
                         }
                         
                         modal.style.display = "block";
@@ -218,7 +241,7 @@
                 });
                 calendar.render();
             }
-    
+
             // Modal close handler
             var modal = document.getElementById("eventModal");
             var span = document.getElementsByClassName("close")[0];
@@ -231,5 +254,6 @@
                 }
             }
         });
-    </script></body>
+    </script>    
+</body>
 </html>
