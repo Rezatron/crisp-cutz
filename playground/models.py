@@ -158,12 +158,25 @@ class AppointmentService(models.Model):
 
 
 
+
+
+
 class Review(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='user_reviews')
-    barber = models.ForeignKey(Barber, on_delete=models.CASCADE, related_name='barber_reviews')
-    stars = models.IntegerField()
-    service_type = models.CharField(max_length=100)  # Changed to service_type
-    review_text = models.TextField(blank=True, null=True)
+    barber = models.ForeignKey('Barber', on_delete=models.CASCADE, related_name='barber_reviews')
+    appointment = models.ForeignKey('Appointment', on_delete=models.CASCADE, related_name='appointment_reviews', null=True, blank=True)
+    overall_experience = models.FloatField(default=2.5)  # Overall rating
+    review_text = models.TextField(blank=True, null=True)  # Optional review text
+    created_at = models.DateTimeField(default=timezone.now)  # Provide a default value
 
     def __str__(self):
-        return f"Review for {self.barber} by {self.user}"
+        return f"Review for {self.barber} by {self.user} for appointment {self.appointment}"
+
+
+class ServiceReview(models.Model):
+    review = models.ForeignKey('Review', on_delete=models.CASCADE, related_name='service_reviews')
+    service = models.ForeignKey('Service', on_delete=models.CASCADE, related_name='service_reviews')
+    stars = models.FloatField(default=2.5)  # Rating for the specific service
+
+    def __str__(self):
+        return f"Review for {self.service} in review ID: {self.review.id}"

@@ -31,7 +31,7 @@ def barber_register(request):
             print(form.errors)
     else:
         form = BarberRegistrationForm()
-    return render(request, 'barber_registration.html', {'form': form})
+    return render(request, 'registration/barber_registration.html', {'form': form})
 
 def barber_login_view(request):
     if request.method == 'POST':

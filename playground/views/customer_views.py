@@ -7,17 +7,31 @@ from django.contrib.auth.decorators import login_required
 from .common_views import address_to_coordinates
 from django.urls import reverse
 
+
 def customer_register(request):
     if request.method == 'POST':
         form = CustomerRegistrationForm(request.POST)
         if form.is_valid():
+            # Save the user using the form's save method
             user = form.save(commit=False)
             user.save()
-            Customer.objects.create(user=user, location=form.cleaned_data.get('location'))
+            
+            # Create the Customer instance with the additional fields
+            Customer.objects.create(
+                username=user.username,
+                first_name=user.first_name,
+                last_name=user.last_name,
+                email=user.email,
+                phone_number=form.cleaned_data.get('phone_number'),
+                notification_preferences=form.cleaned_data.get('notification_preferences'),
+                location=form.cleaned_data.get('location'),
+                latitude=form.cleaned_data.get('latitude'),
+                longitude=form.cleaned_data.get('longitude')
+            )
+            
             messages.success(request, 'Registration successful. You can now login.')
             return redirect(reverse('customer_login'))
         else:
-            print(form.errors)
             messages.error(request, 'Please correct the errors below.')
     else:
         form = CustomerRegistrationForm()
