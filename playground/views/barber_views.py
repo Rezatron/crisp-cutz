@@ -57,7 +57,6 @@ def barber_dashboard(request):
 
 
 
-
 @login_required
 def barber_appointments(request):
     barber = request.user.barber
@@ -81,20 +80,20 @@ def barber_appointments(request):
         barber=barber, start_time__date=selected_date
     ).order_by('start_time')
 
-    # Debug: Print fetched data
-    print(f"Appointments on {selected_date}: {appointments}")
-    print(f"Availability on {selected_date}: {availability}")
-
     # Determine the earliest start and latest end times
-    if appointments.exists() or availability.exists():
-        earliest_start = min(
-            [a.date_time for a in appointments] + [a.start_time for a in availability]
-        )
-        latest_end = max(
-            [a.end_time for a in appointments] + [a.end_time for a in availability]
-        )
+    appointment_start_times = [a.date_time for a in appointments if a.date_time is not None]
+    availability_start_times = [a.start_time for a in availability if a.start_time is not None]
+    appointment_end_times = [a.end_time for a in appointments if a.end_time is not None]
+    availability_end_times = [a.end_time for a in availability if a.end_time is not None]
+
+    if appointment_start_times or availability_start_times:
+        earliest_start = min(appointment_start_times + availability_start_times)
     else:
         earliest_start = datetime.combine(selected_date, time(8, 0))  # Default to 08:00
+
+    if appointment_end_times or availability_end_times:
+        latest_end = max(appointment_end_times + availability_end_times)
+    else:
         latest_end = datetime.combine(selected_date, time(16, 0))  # Default to 16:00
 
     # Create a combined list of events, both appointments and availability
@@ -111,7 +110,7 @@ def barber_appointments(request):
 
     for appointment in appointments:
         start_position = time_to_position(appointment.date_time, start_of_day)
-        end_position = time_to_position(appointment.end_time, start_of_day)
+        end_position = time_to_position(appointment.end_time, start_of_day) if appointment.end_time else start_position + 60  # Default to 1 hour duration
         events.append({
             'type': 'appointment',
             'start_time': appointment.date_time,
@@ -124,7 +123,7 @@ def barber_appointments(request):
     
     for avail in availability:
         start_position = time_to_position(avail.start_time, start_of_day)
-        end_position = time_to_position(avail.end_time, start_of_day)
+        end_position = time_to_position(avail.end_time, start_of_day) if avail.end_time else start_position + 60  # Default to 1 hour duration
         events.append({
             'type': 'availability',
             'start_time': avail.start_time,
@@ -151,7 +150,6 @@ def barber_appointments(request):
         'next_day': next_day,
         'hours_list': hours_list
     })
-
 
 @login_required
 def monthly_appointments(request):
@@ -182,7 +180,7 @@ def monthly_appointments(request):
         events.append({
             'title': f"Appointment with {appointment.user.username}",
             'start': appointment.date_time.isoformat(),
-            'end': appointment.end_time.isoformat(),
+            'end': appointment.end_time.isoformat() if appointment.end_time else None,
             'color': '#f8d7da',  # Light red background
             'textColor': '#dc3545',  # Red text for appointments
             'serviceName': services,
@@ -192,7 +190,7 @@ def monthly_appointments(request):
         events.append({
             'title': 'Available',
             'start': avail.start_time.isoformat(),
-            'end': avail.end_time.isoformat(),
+            'end': avail.end_time.isoformat() if avail.end_time else None,
             'color': '#d4edda',  # Light green background
             'textColor': '#28a745',  # Green text for availability
         })
