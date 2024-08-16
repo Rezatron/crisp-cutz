@@ -9,8 +9,10 @@ logger = logging.getLogger('playground')
 def schedule_review_creation(appointment_id):
     logger.debug(f"Task started for appointment ID: {appointment_id}")
     try:
+        # Attempt to retrieve the appointment
         appointment = Appointment.objects.get(id=appointment_id)
-        
+        logger.debug(f"Appointment found: {appointment}")
+
         # Create the overall review
         review = Review.objects.create(
             appointment=appointment,
@@ -19,14 +21,16 @@ def schedule_review_creation(appointment_id):
             overall_experience=2.5,  # Default value for demonstration
             review_text="",
         )
+        logger.debug(f"Review created: {review}")
 
         # Create service-specific reviews
         for service in appointment.services.all():
-            ServiceReview.objects.create(
+            service_review = ServiceReview.objects.create(
                 review=review,
                 service=service,
                 stars=2.5,  # Default value for demonstration
             )
+            logger.debug(f"ServiceReview created: {service_review}")
 
         logger.debug(f"Review and ServiceReviews created for appointment ID: {appointment_id}")
 
@@ -34,12 +38,3 @@ def schedule_review_creation(appointment_id):
         logger.error(f"Appointment ID {appointment_id} does not exist")
     except Exception as e:
         logger.error(f"Error creating review for appointment ID {appointment_id}: {e}")
-
-
-
-
-
-@shared_task
-def simple_task():
-    print("Simple task executed.")
-    return "Task completed"

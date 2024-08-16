@@ -6,4 +6,4 @@ class PlaygroundConfig(AppConfig):
     name = 'playground'
 
     def ready(self):
-        import playground.signals
+        import playground.signals  # Ensure this import is present to register signals

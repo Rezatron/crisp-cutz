@@ -1,5 +1,4 @@
 {% load static %}
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -7,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard</title>
     <link rel="stylesheet" href="{% static 'styles.css' %}">
+    <link rel="stylesheet" href="{% static 'bootstrap.min.css' %}">
 </head>
 <body>
 
@@ -19,9 +19,95 @@
 
 <h3>Dashboard Content</h3>
 
-<span>Hello, {{request.user}}</span>
+<span>Hello, {{ request.user }}</span>
 <span><a href="{% url 'logout_customer' %}">Logout</a></span>
 
+<!-- Notification -->
+<div id="notifications">
+    {% for notification in notifications %}
+    <div class="notification" data-appointment-id="{{ notification.appointment.id }}" onclick="showReviewModal('{{ notification.appointment.id }}')">
+        {{ notification.message }}
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Modal -->
+<div class="modal fade" id="reviewModal" tabindex="-1" role="dialog" aria-labelledby="reviewModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="reviewModalLabel">Submit Review</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="reviewForm">
+                    {% csrf_token %}
+                    <div id="reviewFormContainer">
+                        <!-- Review and Service Review fields will be injected here -->
+                    </div>
+                    <button type="button" class="btn btn-primary" id="submitReview">Submit Review</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="{% static 'jquery.min.js' %}"></script>
+<script src="{% static 'bootstrap.bundle.min.js' %}"></script>
 <script src="{% static 'scripts.js' %}"></script>
+
+<script>
+    // Function to show review modal with appointment details
+    function showReviewModal(appointmentId) {
+        $.get(`/fetch-appointment-details/${appointmentId}/`, function(data) {
+            if (data.success) {
+                let formHtml = `
+                    <div class="form-group">
+                        <label for="review">Overall Review</label>
+                        <textarea class="form-control" id="review" name="review_text" rows="3"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="rating">Overall Rating</label>
+                        <input type="number" class="form-control" id="overall_experience" name="overall_experience" min="1" max="5">
+                    </div>
+                `;
+
+                data.services.forEach(service => {
+                    formHtml += `
+                        <div class="form-group">
+                            <label for="service_${service.id}">Review for ${service.name}</label>
+                            <textarea class="form-control" id="service_${service.id}_text" name="service_${service.id}_text" rows="2"></textarea>
+                            <input type="number" class="form-control" id="service_${service.id}_stars" name="service_${service.id}_stars" min="1" max="5">
+                        </div>
+                    `;
+                });
+
+                $('#reviewFormContainer').html(formHtml);
+                $('#reviewModal').modal('show');
+                $('#submitReview').data('appointment-id', appointmentId);
+            } else {
+                alert('Error fetching appointment details.');
+            }
+        });
+    }
+
+    // Function to submit review form
+    $('#submitReview').click(function() {
+        const appointmentId = $(this).data('appointment-id');
+        const formData = $('#reviewForm').serialize() + `&appointment_id=${appointmentId}&service_count=${$('.form-group').length}`;
+
+        $.post('/submit-review/', formData, function(data) {
+            if (data.success) {
+                alert(data.message);
+                $('#reviewModal').modal('hide');
+            } else {
+                alert('Error submitting review.');
+            }
+        });
+    });
+</script>
+
 </body>
 </html>

@@ -101,25 +101,30 @@ AUTH_PASSWORD_VALIDATORS = [
 AUTHENTICATION_BACKENDS = [
     'django.contrib.auth.backends.ModelBackend',
 ]
-
-LOGGING = {
+# settings.py
+"""LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
     'handlers': {
         'console': {
-            'level': 'ERROR',
+            'level': 'DEBUG',
             'class': 'logging.StreamHandler',
         },
     },
     'loggers': {
         'django': {
             'handlers': ['console'],
-            'level': 'ERROR',
+            'level': 'DEBUG',
+            'propagate': True,
+        },
+        'playground': {  # Add specific logger for your app
+            'handlers': ['console'],
+            'level': 'DEBUG',
             'propagate': True,
         },
     },
 }
-
+"""
 
 
 
