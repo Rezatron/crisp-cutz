@@ -2,7 +2,7 @@ from django.shortcuts import render, redirect
 from django.contrib import messages
 from django.contrib.auth import authenticate, login
 from ..forms import CustomerRegistrationForm, CustomerLoginForm, CustomerUpdateForm
-from ..models import Customer, Barber, Appointment
+from ..models import Customer, Barber, Appointment, Notification
 from django.contrib.auth.decorators import login_required
 from .common_views import address_to_coordinates
 from django.urls import reverse
@@ -57,7 +57,8 @@ def customer_login_view(request):
 
 @login_required
 def dashboard(request):
-    return render(request, 'customer_templates/customer_dashboard.html')
+    notifications = Notification.objects.filter(user=request.user)
+    return render(request, 'customer_templates/customer_dashboard.html', {'notifications': notifications})
 
 @login_required
 def explore(request):

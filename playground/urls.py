@@ -8,6 +8,7 @@ from .views.barber_views import (
 )
 from .views.services_views import get_services_by_barber
 from .views.appointment_views import create_appointment, appointment_confirmation, appointment_list, appointment_detail
+from .views.review_views import fetch_appointment_details, submit_review, check_notifications
 
 urlpatterns = [
     path('', home_page, name='home'),
@@ -46,4 +47,7 @@ urlpatterns = [
     path('get-services-by-barber/', get_services_by_barber, name='get_services_by_barber'),
     path('appointments/list/', appointment_list, name='appointment_list'),
     path('appointments/<int:appointment_id>/', appointment_detail, name='appointment_detail'),
+    path('fetch-appointment-details/<int:appointment_id>/', fetch_appointment_details, name='fetch_appointment_details'),
+    path('submit-review/', submit_review, name='submit_review'),
+    path('check-notifications/', check_notifications, name='check_notifications'),
 ]

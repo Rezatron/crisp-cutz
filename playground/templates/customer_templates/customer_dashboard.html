@@ -5,8 +5,19 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard</title>
-    <link rel="stylesheet" href="{% static 'styles.css' %}">
-    <link rel="stylesheet" href="{% static 'bootstrap.min.css' %}">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <style>
+        .modal-header {
+            background-color: #007bff;
+            color: white;
+        }
+        .modal-title {
+            margin: 0 auto;
+        }
+        .form-group label {
+            font-weight: bold;
+        }
+    </style>
 </head>
 <body>
 
@@ -53,61 +64,59 @@
         </div>
     </div>
 </div>
-
-<script src="{% static 'jquery.min.js' %}"></script>
-<script src="{% static 'bootstrap.bundle.min.js' %}"></script>
+<script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.bundle.min.js"></script>
 <script src="{% static 'scripts.js' %}"></script>
 
 <script>
-    // Function to show review modal with appointment details
-    function showReviewModal(appointmentId) {
-        $.get(`/fetch-appointment-details/${appointmentId}/`, function(data) {
-            if (data.success) {
-                let formHtml = `
+function showReviewModal(appointmentId) {
+    console.log(`Fetching details for appointment ID: ${appointmentId}`);
+    $.get(`/playground/fetch-appointment-details/${appointmentId}/`, function(data) {
+        console.log('Response data:', data);
+        if (data.success) {
+            let formHtml = `
+                <div class="form-group">
+                    <label for="review">Overall Review</label>
+                    <textarea class="form-control" id="review" name="review_text" rows="3" placeholder="Write your review here"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="rating">Overall Rating</label>
+                    <input type="number" class="form-control" id="overall_experience" name="overall_experience" step="0.5" min="0.5" max="5" placeholder="Rate your overall experience">
+                </div>
+            `;
+
+            data.services.forEach((service, index) => {
+                formHtml += `
                     <div class="form-group">
-                        <label for="review">Overall Review</label>
-                        <textarea class="form-control" id="review" name="review_text" rows="3"></textarea>
-                    </div>
-                    <div class="form-group">
-                        <label for="rating">Overall Rating</label>
-                        <input type="number" class="form-control" id="overall_experience" name="overall_experience" min="1" max="5">
+                        <label for="service_${service.id}">Review for ${service.name}</label>
+                        <textarea class="form-control" id="service_${service.id}_text" name="service_${index}_text" rows="2" placeholder="Write your review here"></textarea>
+                        <input type="number" class="form-control" id="service_${service.id}_stars" name="service_${index}_stars" step="0.5" min="0.5" max="5" placeholder="Rate the service">
+                        <input type="hidden" name="service_${index}_id" value="${service.id}">
                     </div>
                 `;
+            });
 
-                data.services.forEach(service => {
-                    formHtml += `
-                        <div class="form-group">
-                            <label for="service_${service.id}">Review for ${service.name}</label>
-                            <textarea class="form-control" id="service_${service.id}_text" name="service_${service.id}_text" rows="2"></textarea>
-                            <input type="number" class="form-control" id="service_${service.id}_stars" name="service_${service.id}_stars" min="1" max="5">
-                        </div>
-                    `;
-                });
-
-                $('#reviewFormContainer').html(formHtml);
-                $('#reviewModal').modal('show');
-                $('#submitReview').data('appointment-id', appointmentId);
-            } else {
-                alert('Error fetching appointment details.');
-            }
-        });
-    }
-
-    // Function to submit review form
-    $('#submitReview').click(function() {
-        const appointmentId = $(this).data('appointment-id');
-        const formData = $('#reviewForm').serialize() + `&appointment_id=${appointmentId}&service_count=${$('.form-group').length}`;
-
-        $.post('/submit-review/', formData, function(data) {
-            if (data.success) {
-                alert(data.message);
-                $('#reviewModal').modal('hide');
-            } else {
-                alert('Error submitting review.');
-            }
-        });
+            $('#reviewFormContainer').html(formHtml);
+            $('#reviewModal').modal('show');
+            $('#submitReview').data('appointment-id', appointmentId);
+        } else {
+            alert('Error fetching appointment details.');
+        }
     });
-</script>
+}
 
+$('#submitReview').click(function() {
+    const appointmentId = $(this).data('appointment-id');
+    const formData = $('#reviewForm').serialize() + `&appointment_id=${appointmentId}&service_count=${$('#reviewFormContainer .form-group').length}`;
+
+    $.post('/playground/submit-review/', formData, function(data) {
+        if (data.success) {
+            alert(data.message);
+            $('#reviewModal').modal('hide');
+        } else {
+            alert('Error submitting review.');
+        }
+    });
+});</script>
 </body>
 </html>

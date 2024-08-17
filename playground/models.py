@@ -7,6 +7,7 @@ import string
 from django.utils import timezone
 from django.conf import settings
 from datetime import datetime, timedelta, time
+from django.contrib.auth.models import User
 
 import logging
 
@@ -160,12 +161,11 @@ class AppointmentService(models.Model):
 
 
 
-
 class Review(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='user_reviews')
     barber = models.ForeignKey(Barber, on_delete=models.CASCADE, related_name='barber_reviews')
     appointment = models.ForeignKey(Appointment, on_delete=models.CASCADE, related_name='appointment_reviews', null=True, blank=True)
-    overall_experience = models.FloatField(default=2.5)  # Overall rating
+    overall_experience = models.FloatField()  # Removed default value
     review_text = models.TextField(blank=True, null=True)  # Optional review text
     created_at = models.DateTimeField(default=timezone.now)  # Default value
 
@@ -176,8 +176,26 @@ class Review(models.Model):
 class ServiceReview(models.Model):
     review = models.ForeignKey(Review, on_delete=models.CASCADE, related_name='service_reviews')
     service = models.ForeignKey(Service, on_delete=models.CASCADE, related_name='service_reviews')
-    stars = models.FloatField(default=2.5)  # Rating for the specific service
+    stars = models.FloatField()  # Removed default value
     review_text = models.TextField(blank=True, null=True)  # Optional review text for the service
 
     def __str__(self):
         return f"Review for {self.service} in review ID: {self.review.id}"
+
+
+class Notification(models.Model):
+    NOTIFICATION_TYPES = (
+        ('review', 'Review'),
+        ('offer', 'Offer'),
+        ('system', 'System'),
+    )
+
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    notification_type = models.CharField(max_length=10, choices=NOTIFICATION_TYPES)
+    message = models.TextField()
+    read = models.BooleanField(default=False)
+    created_at = models.DateTimeField(default=timezone.now)
+    appointment = models.ForeignKey(Appointment, on_delete=models.SET_NULL, null=True, blank=True)  # Add this line
+
+    def __str__(self):
+        return f"Notification for {self.user.username}: {self.message}"

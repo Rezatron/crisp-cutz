@@ -250,3 +250,56 @@ class ServiceForm(forms.ModelForm):
         widgets = {
             'duration': forms.TextInput(attrs={'type': 'text', 'placeholder': 'Duration in HH:MM:SS'}),
         }
+
+
+
+
+
+
+
+class ReviewForm(forms.Form):
+    overall_experience = forms.FloatField(
+        min_value=0.5,
+        max_value=5.0,
+        widget=forms.NumberInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Rate your overall experience',
+            'step': '0.5',
+            'min': '0.5',
+            'max': '5'
+        }),
+        label='Overall Rating'
+    )
+    review_text = forms.CharField(
+        required=False,
+        widget=forms.Textarea(attrs={
+            'class': 'form-control',
+            'rows': 3,
+            'placeholder': 'Write your review here'
+        }),
+        label='Review Text'
+    )
+
+class ServiceReviewForm(forms.Form):
+    service_id = forms.IntegerField(widget=forms.HiddenInput())
+    stars = forms.FloatField(
+        min_value=0.5,
+        max_value=5.0,
+        widget=forms.NumberInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Rate the service',
+            'step': '0.5',
+            'min': '0.5',
+            'max': '5'
+        }),
+        label='Service Rating'
+    )
+    review_text = forms.CharField(
+        required=False,
+        widget=forms.Textarea(attrs={
+            'class': 'form-control',
+            'rows': 2,
+            'placeholder': 'Write your review here'
+        }),
+        label='Service Review Text'
+    )

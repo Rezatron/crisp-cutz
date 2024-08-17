@@ -33,6 +33,8 @@ urlpatterns = [
     path('dashboard/', dashboard, name='dashboard'),
     path('barber/dashboard/', barber_dashboard, name='barber_dashboard'),
     path('logout/', logout_user, name='logout'),
+    path('playground/', include('playground.urls')),  # Include playground URLs
+
 ]
 
 if settings.DEBUG:
