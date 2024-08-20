@@ -32,13 +32,27 @@ def fetch_appointment_details(request, appointment_id):
 @login_required
 @require_POST
 def submit_review(request):
+    logger.debug("submit_review called")
     appointment_id = request.POST.get('appointment_id')
     overall_experience = request.POST.get('overall_experience')
     review_text = request.POST.get('review_text')
-    service_count = int(request.POST.get('service_count'))
+    service_count = request.POST.get('service_count')
+
+    logger.debug(f"Received data: appointment_id={appointment_id}, overall_experience={overall_experience}, review_text={review_text}, service_count={service_count}")
+
+    if service_count is not None:
+        try:
+            service_count = int(service_count)
+        except ValueError:
+            logger.error("Invalid service_count value")
+            return JsonResponse({'success': False, 'message': 'Invalid service count.'})
+    else:
+        logger.error("service_count is missing")
+        return JsonResponse({'success': False, 'message': 'Service count is required.'})
 
     try:
         appointment = Appointment.objects.get(id=appointment_id, user=request.user)
+        logger.debug(f"Appointment found: {appointment}")
         review = Review.objects.create(
             user=request.user,
             barber=appointment.barber,
@@ -46,24 +60,43 @@ def submit_review(request):
             overall_experience=overall_experience,
             review_text=review_text
         )
+        logger.debug(f"Review created: {review}")
 
         for i in range(service_count):
             service_id = request.POST.get(f'service_{i}_id')
             service_stars = request.POST.get(f'service_{i}_stars')
             service_review_text = request.POST.get(f'service_{i}_text')
+
+            logger.debug(f"Service {i}: service_id={service_id}, service_stars={service_stars}, service_review_text={service_review_text}")
+
+            if not service_id or not service_stars:
+                logger.warning(f"Skipping service {i} due to missing data: service_id={service_id}, service_stars={service_stars}")
+                continue
+
+            try:
+                service_stars = float(service_stars)
+            except ValueError:
+                logger.error(f"Invalid star rating for service {i}")
+                return JsonResponse({'success': False, 'message': 'Invalid star rating.'})
+
             ServiceReview.objects.create(
                 review=review,
                 service_id=service_id,
                 stars=service_stars,
                 review_text=service_review_text
             )
+            logger.debug(f"ServiceReview created for service {i}")
 
-        # Mark the notification as read or delete it
         Notification.objects.filter(user=request.user, appointment=appointment).delete()
+        logger.debug("Notifications deleted")
 
         return JsonResponse({'success': True, 'message': 'Review submitted successfully.'})
     except Appointment.DoesNotExist:
+        logger.error("Appointment not found")
         return JsonResponse({'success': False, 'message': 'Appointment not found.'})
+    except Exception as e:
+        logger.exception("An unexpected error occurred")
+        return JsonResponse({'success': False, 'message': 'An unexpected error occurred.'})
 
 @login_required
 def check_notifications(request):
@@ -79,8 +112,6 @@ def check_notifications(request):
         appointment.notified = True
         appointment.save()
 
-    # Clear notifications for deleted appointments
-    # Assuming you have a Notification model
     Notification.objects.filter(user=request.user, appointment__isnull=True).delete()
 
     return JsonResponse({'notifications': notifications})
