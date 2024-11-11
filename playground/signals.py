@@ -18,12 +18,3 @@ def create_review(sender, instance, created, **kwargs):
             logger.debug(f"Scheduling review creation task for appointment ID: {instance.id} immediately")
             schedule_review_creation.apply_async((instance.id,))
 
-        barber_name = f"{instance.barber.first_name} {instance.barber.last_name}" if instance.barber else "Unknown Barber"
-
-        Notification.objects.create(
-            user=instance.user,
-            notification_type='review',
-            message=f"Your appointment with {barber_name} has ended. Please leave a review.",
-            appointment=instance
-        )
-        logger.debug(f"Notification created for user: {instance.user.id} for appointment ID: {instance.id}")

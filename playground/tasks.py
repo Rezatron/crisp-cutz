@@ -14,6 +14,7 @@ def schedule_review_creation(appointment_id):
 
         barber_name = f"{appointment.barber.first_name} {appointment.barber.last_name}" if appointment.barber else "Unknown Barber"
 
+        # Create Notification here
         Notification.objects.create(
             user=appointment.user,
             notification_type='review',
